@@ -1,0 +1,44 @@
+{
+    "model_name": "Gradient Boosting",
+    "target": "stress_level",
+    "features": [
+        "anxiety_level",
+        "self_esteem",
+        "mental_health_history",
+        "depression",
+        "headache",
+        "blood_pressure",
+        "sleep_quality",
+        "breathing_problem",
+        "noise_level",
+        "living_conditions",
+        "safety",
+        "basic_needs",
+        "academic_performance",
+        "study_load",
+        "teacher_student_relationship",
+        "future_career_concerns",
+        "social_support",
+        "peer_pressure",
+        "extracurricular_activities",
+        "bullying"
+    ],
+    "classes": [
+        0,
+        1,
+        2
+    ],
+    "selection_metric": "5-fold Cross Validation Macro F1",
+    "cv_macro_f1": 0.8886685802451499,
+    "best_parameters": {
+        "classifier__learning_rate": 0.05,
+        "classifier__max_depth": 2,
+        "classifier__n_estimators": 200
+    },
+    "test_metrics": {
+        "accuracy": 0.9,
+        "precision_macro": 0.900545573148313,
+        "recall_macro": 0.9004004004004004,
+        "f1_macro": 0.900116084341935
+    }
+}

@@ -1,0 +1,104 @@
+{
+    "model_name": "Gaussian Naive Bayes",
+    "target": "stress_level",
+    "features": [
+        "anxiety_level",
+        "self_esteem",
+        "mental_health_history",
+        "depression",
+        "headache",
+        "blood_pressure",
+        "sleep_quality",
+        "breathing_problem",
+        "noise_level",
+        "living_conditions",
+        "safety",
+        "basic_needs",
+        "academic_performance",
+        "study_load",
+        "teacher_student_relationship",
+        "future_career_concerns",
+        "social_support",
+        "peer_pressure",
+        "extracurricular_activities",
+        "bullying"
+    ],
+    "classes": [
+        0,
+        1,
+        2
+    ],
+    "selection_metric": "5-fold Cross Validation Macro F1",
+    "cv_macro_f1": 0.8852117093327433,
+    "test_metrics": {
+        "accuracy": 0.8772727272727273,
+        "precision_macro": 0.8893515972167658,
+        "recall_macro": 0.8773773773773774,
+        "f1_macro": 0.8791571170910698
+    },
+    "model_comparison": [
+        {
+            "Model": "Gaussian Naive Bayes",
+            "CV Macro F1": 0.8852117093327433,
+            "CV F1 Std": 0.013873186876147485,
+            "Test Accuracy": 0.8772727272727273,
+            "Test Precision": 0.8893515972167658,
+            "Test Recall": 0.8773773773773774,
+            "Test Macro F1": 0.8791571170910698
+        },
+        {
+            "Model": "Gradient Boosting",
+            "CV Macro F1": 0.8838945802015694,
+            "CV F1 Std": 0.020767435261704728,
+            "Test Accuracy": 0.8636363636363636,
+            "Test Precision": 0.8642221610713631,
+            "Test Recall": 0.8642392392392392,
+            "Test Macro F1": 0.8631972521113408
+        },
+        {
+            "Model": "Decision Tree",
+            "CV Macro F1": 0.8786321658536353,
+            "CV F1 Std": 0.03694603634282272,
+            "Test Accuracy": 0.8545454545454545,
+            "Test Precision": 0.8555820542611957,
+            "Test Recall": 0.85497997997998,
+            "Test Macro F1": 0.8542714354199431
+        },
+        {
+            "Model": "Logistic Regression",
+            "CV Macro F1": 0.8773944846280258,
+            "CV F1 Std": 0.02807959375368192,
+            "Test Accuracy": 0.8818181818181818,
+            "Test Precision": 0.8818338886832038,
+            "Test Recall": 0.8821321321321322,
+            "Test Macro F1": 0.8819553543691475
+        },
+        {
+            "Model": "Random Forest",
+            "CV Macro F1": 0.8715997375977784,
+            "CV F1 Std": 0.027284691226479262,
+            "Test Accuracy": 0.8863636363636364,
+            "Test Precision": 0.8870841487279844,
+            "Test Recall": 0.8866366366366366,
+            "Test Macro F1": 0.8865056710055569
+        },
+        {
+            "Model": "KNN",
+            "CV Macro F1": 0.8671935194735816,
+            "CV F1 Std": 0.0392133687549199,
+            "Test Accuracy": 0.85,
+            "Test Precision": 0.853399813239439,
+            "Test Recall": 0.8506006006006005,
+            "Test Macro F1": 0.8496060294621445
+        },
+        {
+            "Model": "SVM",
+            "CV Macro F1": 0.8669581460556545,
+            "CV F1 Std": 0.028391223776306464,
+            "Test Accuracy": 0.8772727272727273,
+            "Test Precision": 0.8775373945185169,
+            "Test Recall": 0.8776276276276276,
+            "Test Macro F1": 0.8773946360153256
+        }
+    ]
+}
