@@ -1,0 +1,19 @@
+{
+    "model": "Tuned Gradient Boosting",
+    "model_file": "model/tuned_model.joblib",
+    "metadata_file": "model/tuning_metadata.json",
+    "feature_count": 20,
+    "feature_order_verified": true,
+    "model_loaded": true,
+    "metadata_loaded": true,
+    "prediction": 1,
+    "valid_prediction_class": true,
+    "probabilities": {
+        "0": 0.003966576294606596,
+        "1": 0.9924992978154148,
+        "2": 0.0035341258899785686
+    },
+    "probabilities_sum": 1.0,
+    "prediction_consistent": true,
+    "verification_status": "PASSED"
+}
