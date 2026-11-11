@@ -1,10 +1,10 @@
 /**
- * MLOps Documentation & Transparency Matrix (20 Model Features vs. 22 Assessment Questions)
+ * MLOps Documentation & Transparency Matrix (20 Model Features vs. 25 Assessment Questions)
  *
  * PURPOSE & ARCHITECTURAL BOUNDARY:
  * - This file serves strictly as an educational and MLOps documentation matrix.
  * - It is NOT a questionnaire-to-model conversion engine.
- * - Student responses from the 22-question check-in are preserved as an independent
+ * - Student responses from the 25-question check-in are preserved as an independent
  *   personal well-being reflection profile and are NEVER converted into numerical
  *   model inputs or submitted to the prediction endpoint.
  *
@@ -78,12 +78,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Physical Well-being',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q6'],
+    contributingQuestions: ['q7'],
     status: 'format_mismatch',
     statusLabel: 'Format Difference (0–5 vs Checklist)',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset uses a 0–5 frequency scale with undocumented verbal anchors. Question 6 records headaches as a physical experience checklist item for student awareness without calculating a numerical rating.',
+      'Dataset uses a 0–5 frequency scale with undocumented verbal anchors. Question 7 records headaches as a physical experience checklist item for student awareness without calculating a numerical rating.',
     defaultDemoValue: 2,
   },
   {
@@ -91,12 +91,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Physical Well-being',
     expectedRange: [1, 3],
     type: 'categorical_integer',
-    contributingQuestions: ['q9'],
+    contributingQuestions: ['q11'],
     status: 'pending_review',
     statusLabel: 'Clinical Encoding Undocumented',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset encodes blood_pressure strictly as discrete categories {1, 2, 3}, but original clinical thresholds (such as mmHg readings or stages) are undocumented. Question 9 asks about healthcare consultations for reflection and is never converted to a numerical value.',
+      'Dataset encodes blood_pressure strictly as discrete categories {1, 2, 3}, but original clinical thresholds (such as mmHg readings or stages) are undocumented. Question 11 asks about healthcare consultations for reflection and is never converted to a numerical value.',
     defaultDemoValue: 2,
   },
   {
@@ -104,12 +104,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Physical Well-being',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q7'],
+    contributingQuestions: ['q8'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (5 Choices vs 6 Levels)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 7 captures subjective sleep quality across 5 visual ratings, while the dataset contains 6 integer levels (0 to 5) with undocumented scale anchors. Responses are kept for self-reflection and not mapped numerically.',
+      'Question 8 captures subjective sleep quality across 5 visual ratings, while the dataset contains 6 integer levels (0 to 5) with undocumented scale anchors. Responses are kept for self-reflection and not mapped numerically.',
     defaultDemoValue: 2,
   },
   {
@@ -117,12 +117,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Physical Well-being',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q6'],
+    contributingQuestions: ['q7'],
     status: 'format_mismatch',
     statusLabel: 'Format Difference (0–5 vs Checklist)',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset features a 0–5 scale for breathing discomfort with undocumented anchors. Question 6 captures breathing discomfort presence as a checklist item for personal reflection.',
+      'Dataset features a 0–5 scale for breathing discomfort with undocumented anchors. Question 7 captures breathing discomfort presence as a checklist item for personal reflection.',
     defaultDemoValue: 4,
   },
   {
@@ -130,12 +130,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Physical Well-being',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q8'],
+    contributingQuestions: ['q10'],
     status: 'format_mismatch',
     statusLabel: 'Format Difference (0–5 vs Checklist)',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset measures environmental noise on a 0–5 scale. Question 8 explores concentration distractions (including ambient noise) as a qualitative checklist rather than an environmental exposure score.',
+      'Dataset measures environmental noise on a 0–5 scale. Question 10 explores concentration distractions (including ambient noise) as a qualitative checklist rather than an environmental exposure score.',
     defaultDemoValue: 2,
   },
   {
@@ -143,12 +143,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Living Environment',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q14'],
+    contributingQuestions: ['q16'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (4 Choices vs 6 Levels)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 14 captures living space comfort across 4 descriptive tiers plus a privacy option. Conceptually aligned with residential stability, but not converted to the dataset 0–5 integer levels.',
+      'Question 16 captures living space comfort across 4 descriptive tiers plus a privacy option. Conceptually aligned with residential stability, but not converted to the dataset 0–5 integer levels.',
     defaultDemoValue: 3,
   },
   {
@@ -156,12 +156,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Living Environment',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q15'],
+    contributingQuestions: ['q17'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (4 Choices vs 6 Levels)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 15 captures surroundings comfort and safety across 4 options plus privacy option. Conceptually relates to the dataset safety domain, but kept independent without arbitrary integer assignment.',
+      'Question 17 captures surroundings comfort and safety across 4 options plus privacy option. Conceptually relates to the dataset safety domain, but kept independent without arbitrary integer assignment.',
     defaultDemoValue: 3,
   },
   {
@@ -169,12 +169,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Living Environment',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q16'],
+    contributingQuestions: ['q18'],
     status: 'format_mismatch',
     statusLabel: 'Format Difference (0–5 vs Checklist)',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset records basic needs on a 0–5 scale with undocumented scoring. Question 16 is a multi-select checklist of everyday necessities for reflection; items are never summed or converted to numerical scores.',
+      'Dataset records basic needs on a 0–5 scale with undocumented scoring. Question 18 is a multi-select checklist of everyday necessities for reflection; items are never summed or converted to numerical scores.',
     defaultDemoValue: 2,
   },
   {
@@ -182,12 +182,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Study & Academic Life',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q11'],
+    contributingQuestions: ['q13'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (Satisfaction vs Metric)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 11 measures personal satisfaction with academic performance across 5 visual ratings, whereas the original dataset metric (GPA, grades, or self-report) is undocumented. Not converted to numerical values.',
+      'Question 13 measures personal satisfaction with academic performance across 5 visual ratings, whereas the original dataset metric (GPA, grades, or self-report) is undocumented. Not converted to numerical values.',
     defaultDemoValue: 3,
   },
   {
@@ -195,12 +195,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Study & Academic Life',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q10'],
+    contributingQuestions: ['q12'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (Coping vs Workload)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 10 captures situational coping reactions when handling multiple approaching deadlines. Conceptually reflects workload strain, but 5 coping choices are not converted to the dataset 0–5 rating.',
+      'Question 12 captures situational coping reactions when handling multiple approaching deadlines. Conceptually reflects workload strain, but 5 coping choices are not converted to the dataset 0–5 rating.',
     defaultDemoValue: 2,
   },
   {
@@ -208,12 +208,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Study & Academic Life',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q12'],
+    contributingQuestions: ['q14'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (Faculty Comfort)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 12 captures comfort approaching faculty members for guidance across 5 choices, conceptually matching faculty support quality without mapping into the 6 discrete levels (0–5).',
+      'Question 14 captures comfort approaching faculty members for guidance across 5 choices, conceptually matching faculty support quality without mapping into the 6 discrete levels (0–5).',
     defaultDemoValue: 3,
   },
   {
@@ -221,12 +221,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Study & Academic Life',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q13'],
+    contributingQuestions: ['q15'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (Career Outlook)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 13 captures career clarity and future anxiety across 5 choices, conceptually mirroring future career concerns without fabricating an offset into the 0–5 scale.',
+      'Question 15 captures career clarity and future anxiety across 5 choices, conceptually mirroring future career concerns without fabricating an offset into the 0–5 scale.',
     defaultDemoValue: 3,
   },
   {
@@ -234,12 +234,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Living Environment & Campus',
     expectedRange: [0, 3],
     type: 'integer',
-    contributingQuestions: ['q17'],
+    contributingQuestions: ['q19'],
     status: 'format_mismatch',
     statusLabel: 'Format Difference (0–3 vs Checklist)',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset bounds social_support strictly within [0, 3]. Question 17 is a multi-select checklist of 6 confidant categories. Answers are kept qualitative and never converted to numerical values.',
+      'Dataset bounds social_support strictly within [0, 3]. Question 19 is a multi-select checklist of 6 confidant categories. Answers are kept qualitative and never converted to numerical values.',
     defaultDemoValue: 2,
   },
   {
@@ -247,12 +247,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Mind & Emotions',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q5'],
+    contributingQuestions: ['q6'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (Peer Scenario)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 5 presents a situational scenario of peer academic comparison. Conceptually reflects peer pressure dynamics, but situational responses are not converted to a 0–5 integer score.',
+      'Question 6 presents a situational scenario of peer academic comparison. Conceptually reflects peer pressure dynamics, but situational responses are not converted to a 0–5 integer score.',
     defaultDemoValue: 3,
   },
   {
@@ -260,12 +260,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Social & Campus Life',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q19'],
+    contributingQuestions: ['q21'],
     status: 'format_mismatch',
     statusLabel: 'Format & Polarity Difference',
     statusBadgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     rationale:
-      'Dataset correlates extracurriculars positively with stress (overburden/strain). Question 19 allows students to select restful leisure activities and clubs. Answers are kept qualitative for self-reflection.',
+      'Dataset correlates extracurriculars positively with stress (overburden/strain). Question 21 allows students to select restful leisure activities and clubs. Answers are kept qualitative for self-reflection.',
     defaultDemoValue: 3,
   },
   {
@@ -273,12 +273,12 @@ export const MODEL_FEATURES_METADATA = [
     category: 'Social & Campus Life',
     expectedRange: [0, 5],
     type: 'integer',
-    contributingQuestions: ['q18'],
+    contributingQuestions: ['q20'],
     status: 'conceptual_alignment',
     statusLabel: 'Conceptual Alignment (Frequency Tiers)',
     statusBadgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     rationale:
-      'Question 18 captures frequency of bullying or exclusion across 4 frequency tiers plus privacy option. Conceptually aligned with interpersonal hostility, but not converted to 0–5 integers.',
+      'Question 20 captures frequency of bullying or exclusion across 4 frequency tiers plus privacy option. Conceptually aligned with interpersonal hostility, but not converted to 0–5 integers.',
     defaultDemoValue: 2,
   },
 ];
@@ -291,7 +291,7 @@ export const MODEL_FEATURES_METADATA = [
  * matching app/schemas.py for technical inspection and testing. It is NEVER
  * calculated or derived from student questionnaire answers.
  *
- * @param {Record<string, any>} answers - User responses for q1 to q22
+ * @param {Record<string, any>} answers - User responses for q1 to q25
  * @returns {{
  *   features: Array<any>,
  *   totalFeatures: number,
