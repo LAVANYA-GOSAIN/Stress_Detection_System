@@ -15,10 +15,10 @@ import { SECTIONS, QUESTIONS_MAP } from '../../data/questionnaire';
 import { buildFeatureAuditReport } from '../../utils/featureMapping';
 
 /**
- * AssessmentReview Component (22-Question Architecture)
+ * AssessmentReview Component (25-Question Architecture)
  *
  * Final review and submission-ready screen:
- * 1. Comprehensive breakdown of all 22 responses across the 5 sections.
+ * 1. Comprehensive breakdown of all 25 responses across the 5 sections.
  * 2. Ability to jump back and edit any section.
  * 3. Transparent MLOps mapping audit for all 20 model features with clinical/psychometric flags.
  * 4. Boundary-respecting handoff to Krish's results dashboard without duplicating API or prediction code.
@@ -89,7 +89,7 @@ export default function AssessmentReview({
       <div className="bg-white rounded-3xl p-8 sm:p-10 border border-purple-100 shadow-sm space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold tracking-wide border border-emerald-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>All 22 Questions Completed</span>
+          <span>All 25 Questions Completed</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -112,7 +112,7 @@ export default function AssessmentReview({
             }`}
           >
             <ClipboardCheck className="w-4 h-4" />
-            <span>Questionnaire Responses (22 Questions)</span>
+            <span>Questionnaire Responses (25 Questions)</span>
           </button>
 
           <button
@@ -242,7 +242,7 @@ export default function AssessmentReview({
               Model Feature Reference & Transparency Matrix
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed max-w-3xl font-normal">
-              Your 22 check-in responses are saved as your personal student self-reflection profile. This section documents the 20 numerical parameters required by the Kaggle-trained machine learning model. To protect your privacy and ensure scientific accuracy, your responses are <strong>not converted into model features</strong> and are <strong>not submitted to the prediction endpoint</strong>.
+              Your 25 check-in responses are saved as your personal student self-reflection profile. This section documents the 20 numerical parameters required by the Kaggle-trained machine learning model. To protect your privacy and ensure scientific accuracy, your responses are <strong>not converted into model features</strong> and are <strong>not submitted to the prediction endpoint</strong>.
             </p>
           </div>
 

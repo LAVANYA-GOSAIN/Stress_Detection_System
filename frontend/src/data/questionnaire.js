@@ -1,14 +1,20 @@
 /**
- * MindScope Assessment Questionnaire Data (Final 22-Question Specification)
+ * MindScope Assessment Questionnaire Data (25-Question Specification)
  *
  * Grounded in:
- * - 5 Well-being Sections (Mind & Emotions, Physical Well-being, Academics & Future, Environment & Support, Campus & Social Life)
- * - 22 Conversational, experience-based questions using mixed interaction formats:
- *   1. Visual answer cards with emojis (Q2, Q7, Q11)
- *   2. Multi-select cards with contradictory option safeguards (Q4, Q6, Q8, Q16, Q17, Q19, Q21)
- *   3. Scenario / Situational cards (Q1, Q5, Q10, Q20, Q22)
- *   4. Sensitive & frequency single-choice cards (Q3, Q9, Q12, Q13, Q14, Q15, Q18)
- * - Full alignment with all 20 Scikit-learn model parameters while keeping answer storage separate from ML inputs.
+ * - 5 Well-being Sections:
+ *   1. Mind & Emotions (6 Questions: Q1–Q6)
+ *   2. Physical Well-being (5 Questions: Q7–Q11)
+ *   3. Academics & Future (4 Questions: Q12–Q15)
+ *   4. Living Environment & Safety (4 Questions: Q16–Q19)
+ *   5. Campus & Social Life (6 Questions: Q20–Q25)
+ * - Total: 25 Conversational, experience-based questions using mixed interaction formats:
+ *   1. Visual answer cards with emojis (Q2, Q8, Q13)
+ *   2. Multi-select cards with contradictory option safeguards (Q4, Q7, Q10, Q18, Q19, Q21, Q24)
+ *   3. Scenario / Situational cards (Q1, Q6, Q12, Q22, Q25)
+ *   4. Single-choice cards (Q3, Q5, Q9, Q11, Q14, Q15, Q16, Q17, Q20, Q23)
+ * - 16 Scored Questions across 5 reflection dimensions; 9 Descriptive-only contextual questions.
+ * - Strict decoupling from 20-feature Kaggle model inputs.
  */
 
 import { 
@@ -26,7 +32,7 @@ export const SECTIONS = [
     title: 'Mind & Emotions',
     subtitle: 'Understanding emotional experiences, confidence and peer pressure.',
     icon: Brain,
-    questionIds: ['q1', 'q2', 'q3', 'q4', 'q5'],
+    questionIds: ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
   },
   {
     id: 'physical_wellbeing',
@@ -34,7 +40,7 @@ export const SECTIONS = [
     title: 'Physical Well-being',
     subtitle: 'Understanding physical discomfort and sleep.',
     icon: HeartPulse,
-    questionIds: ['q6', 'q7', 'q8', 'q9'],
+    questionIds: ['q7', 'q8', 'q9', 'q10', 'q11'],
   },
   {
     id: 'academics_future',
@@ -42,15 +48,15 @@ export const SECTIONS = [
     title: 'Academics & Future',
     subtitle: 'Academic pressure, performance and future concerns.',
     icon: GraduationCap,
-    questionIds: ['q10', 'q11', 'q12', 'q13'],
+    questionIds: ['q12', 'q13', 'q14', 'q15'],
   },
   {
-    id: 'environment_support',
+    id: 'living_environment_safety',
     sectionNumber: 4,
-    title: 'Environment & Support',
+    title: 'Living Environment & Safety',
     subtitle: 'Living conditions, safety and support systems.',
     icon: Home,
-    questionIds: ['q14', 'q15', 'q16', 'q17'],
+    questionIds: ['q16', 'q17', 'q18', 'q19'],
   },
   {
     id: 'campus_social_life',
@@ -58,21 +64,22 @@ export const SECTIONS = [
     title: 'Campus & Social Life',
     subtitle: 'Social experiences, extracurricular activities and personal challenges.',
     icon: Users,
-    questionIds: ['q18', 'q19', 'q20', 'q21', 'q22'],
+    questionIds: ['q20', 'q21', 'q22', 'q23', 'q24', 'q25'],
   },
 ];
 
 export const CHAPTERS = SECTIONS;
 
 /**
- * Catalogue of All 22 Experience-Based Questions (Preserving Exact User Specifications)
+ * Catalogue of All 25 Experience-Based Questions in Final Display Order
  */
 export const QUESTIONS_MAP = {
   // ====================================================
-  // SECTION 1 – MIND & EMOTIONS (5 Questions)
+  // SECTION 1 – MIND & EMOTIONS (6 Questions: Q1–Q6)
   // ====================================================
   q1: {
     id: 'q1',
+    originalId: 'q1',
     section: 1,
     title: 'Worry & Overload',
     format: 'single_select',
@@ -88,6 +95,7 @@ export const QUESTIONS_MAP = {
   },
   q2: {
     id: 'q2',
+    originalId: 'q2',
     section: 1,
     title: 'Task Confidence',
     format: 'visual_rating',
@@ -103,6 +111,7 @@ export const QUESTIONS_MAP = {
   },
   q3: {
     id: 'q3',
+    originalId: 'q3',
     section: 1,
     title: 'Mental Health Background',
     format: 'single_select',
@@ -117,6 +126,7 @@ export const QUESTIONS_MAP = {
   },
   q4: {
     id: 'q4',
+    originalId: 'q4',
     section: 1,
     title: 'Recent Emotional State',
     format: 'multi_select',
@@ -134,6 +144,23 @@ export const QUESTIONS_MAP = {
   },
   q5: {
     id: 'q5',
+    originalId: 'new_emotional_recovery',
+    section: 1,
+    title: 'Emotional Balance & Recovery',
+    format: 'single_select',
+    question: 'When something stressful happens, how easily are you able to regain your emotional balance?',
+    helper: 'Reflect on your ability to bounce back and find calm after unexpected tension.',
+    options: [
+      { value: 'very_easily', label: 'Very easily' },
+      { value: 'fairly_easily', label: 'Fairly easily' },
+      { value: 'sometimes', label: 'Sometimes' },
+      { value: 'with_difficulty', label: 'With difficulty' },
+      { value: 'very_difficultly', label: 'Very difficultly' },
+    ],
+  },
+  q6: {
+    id: 'q6',
+    originalId: 'q5',
     section: 1,
     title: 'Peer Academic Dynamics',
     format: 'single_select',
@@ -149,10 +176,11 @@ export const QUESTIONS_MAP = {
   },
 
   // ====================================================
-  // SECTION 2 – PHYSICAL WELL-BEING (4 Questions)
+  // SECTION 2 – PHYSICAL WELL-BEING (5 Questions: Q7–Q11)
   // ====================================================
-  q6: {
-    id: 'q6',
+  q7: {
+    id: 'q7',
+    originalId: 'q6',
     section: 2,
     title: 'Physical Discomfort',
     format: 'multi_select',
@@ -168,8 +196,9 @@ export const QUESTIONS_MAP = {
       { value: 'prefer_not_to_say', label: 'Prefer not to say', isExclusive: true },
     ],
   },
-  q7: {
-    id: 'q7',
+  q8: {
+    id: 'q8',
+    originalId: 'q7',
     section: 2,
     title: 'Sleep Quality',
     format: 'visual_selection',
@@ -183,8 +212,25 @@ export const QUESTIONS_MAP = {
       { value: 'very_poor', label: 'Very poor – I struggle to sleep properly.', emoji: '🌃' },
     ],
   },
-  q8: {
-    id: 'q8',
+  q9: {
+    id: 'q9',
+    originalId: 'new_physical_restfulness',
+    section: 2,
+    title: 'Physical Energy & Restfulness',
+    format: 'single_select',
+    question: 'How often do you feel physically rested and energetic during the day?',
+    helper: 'Notice your daytime vitality, natural energy levels, and alertness.',
+    options: [
+      { value: 'almost_always', label: 'Almost always' },
+      { value: 'often', label: 'Often' },
+      { value: 'sometimes', label: 'Sometimes' },
+      { value: 'rarely', label: 'Rarely' },
+      { value: 'almost_never', label: 'Almost never' },
+    ],
+  },
+  q10: {
+    id: 'q10',
+    originalId: 'q8',
     section: 2,
     title: 'Concentration Distractions',
     format: 'multi_select',
@@ -200,8 +246,9 @@ export const QUESTIONS_MAP = {
       { value: 'nothing_in_particular', label: 'Nothing in particular', isExclusive: true },
     ],
   },
-  q9: {
-    id: 'q9',
+  q11: {
+    id: 'q11',
+    originalId: 'q9',
     section: 2,
     title: 'Cardiovascular / Blood Pressure History',
     format: 'single_select',
@@ -218,10 +265,11 @@ export const QUESTIONS_MAP = {
   },
 
   // ====================================================
-  // SECTION 3 – ACADEMICS & FUTURE (4 Questions)
+  // SECTION 3 – ACADEMICS & FUTURE (4 Questions: Q12–Q15)
   // ====================================================
-  q10: {
-    id: 'q10',
+  q12: {
+    id: 'q12',
+    originalId: 'q10',
     section: 3,
     title: 'Multiple Deadlines Scenario',
     format: 'single_select',
@@ -235,8 +283,9 @@ export const QUESTIONS_MAP = {
       { value: 'postpone_last_moment', label: 'Postpone tasks until the last moment.' },
     ],
   },
-  q11: {
-    id: 'q11',
+  q13: {
+    id: 'q13',
+    originalId: 'q11',
     section: 3,
     title: 'Academic Performance',
     format: 'visual_rating',
@@ -250,8 +299,9 @@ export const QUESTIONS_MAP = {
       { value: 'very_dissatisfied', label: 'Very dissatisfied', emoji: '😞' },
     ],
   },
-  q12: {
-    id: 'q12',
+  q14: {
+    id: 'q14',
+    originalId: 'q12',
     section: 3,
     title: 'Approaching Instructors',
     format: 'single_select',
@@ -265,8 +315,9 @@ export const QUESTIONS_MAP = {
       { value: 'prefer_manage_own', label: 'I prefer to manage on my own.' },
     ],
   },
-  q13: {
-    id: 'q13',
+  q15: {
+    id: 'q15',
+    originalId: 'q13',
     section: 3,
     title: 'Career & Future Thoughts',
     format: 'single_select',
@@ -282,10 +333,11 @@ export const QUESTIONS_MAP = {
   },
 
   // ====================================================
-  // SECTION 4 – ENVIRONMENT & SUPPORT (4 Questions)
+  // SECTION 4 – LIVING ENVIRONMENT & SAFETY (4 Questions: Q16–Q19)
   // ====================================================
-  q14: {
-    id: 'q14',
+  q16: {
+    id: 'q16',
+    originalId: 'q14',
     section: 4,
     title: 'Living Environment',
     format: 'single_select',
@@ -299,8 +351,9 @@ export const QUESTIONS_MAP = {
       { value: 'prefer_not_to_say', label: 'Prefer not to say.' },
     ],
   },
-  q15: {
-    id: 'q15',
+  q17: {
+    id: 'q17',
+    originalId: 'q15',
     section: 4,
     title: 'Surroundings Safety',
     format: 'single_select',
@@ -314,8 +367,9 @@ export const QUESTIONS_MAP = {
       { value: 'prefer_not_to_say', label: 'Prefer not to say' },
     ],
   },
-  q16: {
-    id: 'q16',
+  q18: {
+    id: 'q18',
+    originalId: 'q16',
     section: 4,
     title: 'Everyday Needs',
     format: 'multi_select',
@@ -331,8 +385,9 @@ export const QUESTIONS_MAP = {
       { value: 'prefer_not_to_say', label: 'Prefer not to say.', isExclusive: true },
     ],
   },
-  q17: {
-    id: 'q17',
+  q19: {
+    id: 'q19',
+    originalId: 'q17',
     section: 4,
     title: 'Support Network',
     format: 'multi_select',
@@ -350,10 +405,11 @@ export const QUESTIONS_MAP = {
   },
 
   // ====================================================
-  // SECTION 5 – CAMPUS & SOCIAL LIFE (5 Questions)
+  // SECTION 5 – CAMPUS & SOCIAL LIFE (6 Questions: Q20–Q25)
   // ====================================================
-  q18: {
-    id: 'q18',
+  q20: {
+    id: 'q20',
+    originalId: 'q18',
     section: 5,
     title: 'Interpersonal Respect',
     format: 'single_select',
@@ -368,8 +424,9 @@ export const QUESTIONS_MAP = {
       { value: 'prefer_not_to_say', label: 'Prefer not to say' },
     ],
   },
-  q19: {
-    id: 'q19',
+  q21: {
+    id: 'q21',
+    originalId: 'q19',
     section: 5,
     title: 'Time Outside Academics',
     format: 'multi_select',
@@ -385,8 +442,9 @@ export const QUESTIONS_MAP = {
       { value: 'mostly_resting_alone', label: 'Mostly resting or spending time alone' },
     ],
   },
-  q20: {
-    id: 'q20',
+  q22: {
+    id: 'q22',
+    originalId: 'q20',
     section: 5,
     title: 'Student Life Routine',
     format: 'single_select',
@@ -400,8 +458,25 @@ export const QUESTIONS_MAP = {
       { value: 'routine_changes_frequently', label: 'My routine changes frequently.' },
     ],
   },
-  q21: {
-    id: 'q21',
+  q23: {
+    id: 'q23',
+    originalId: 'new_college_connection',
+    section: 5,
+    title: 'Campus Community Connection',
+    format: 'single_select',
+    question: 'How connected do you currently feel to your college community?',
+    helper: 'Belonging, friendships, and shared campus community life.',
+    options: [
+      { value: 'very_connected', label: 'Very connected' },
+      { value: 'somewhat_connected', label: 'Somewhat connected' },
+      { value: 'neutral', label: 'Neutral' },
+      { value: 'slightly_disconnected', label: 'Slightly disconnected' },
+      { value: 'very_disconnected', label: 'Very disconnected' },
+    ],
+  },
+  q24: {
+    id: 'q24',
+    originalId: 'q21',
     section: 5,
     title: 'Sources of Pressure',
     format: 'multi_select',
@@ -418,8 +493,9 @@ export const QUESTIONS_MAP = {
       { value: 'other', label: 'Other' },
     ],
   },
-  q22: {
-    id: 'q22',
+  q25: {
+    id: 'q25',
+    originalId: 'q22',
     section: 5,
     title: 'Priority for Improvement',
     format: 'single_select',
@@ -438,34 +514,37 @@ export const QUESTIONS_MAP = {
 };
 
 /**
- * Array of All 22 Questions in Sequential Order
+ * Array of All 25 Questions in Sequential Order
  */
 export const QUESTIONS_LIST = Object.values(QUESTIONS_MAP);
 
 /**
- * Pre-populated Sample Responses for 1-Click Evaluation / Viva Demonstration (22 Questions)
+ * Pre-populated Sample Responses for 1-Click Evaluation / Viva Demonstration (25 Questions)
  */
 export const SAMPLE_VIVA_RESPONSES = {
   q1: 'stay_calm',
   q2: 'confident',
   q3: 'no',
   q4: ['happy_positive', 'calm_relaxed'],
-  q5: 'motivated_improve',
-  q6: ['difficulty_sleeping'],
-  q7: 'good',
-  q8: ['background_noise', 'academic_workload'],
-  q9: 'no',
-  q10: 'create_plan',
-  q11: 'satisfied',
-  q12: 'somewhat_comfortable',
-  q13: 'hopeful_uncertain',
-  q14: 'comfortable_peaceful',
-  q15: 'mostly_comfortable',
-  q16: ['regular_meals', 'time_to_rest', 'comfortable_place_study'],
-  q17: ['friends', 'family'],
-  q18: 'never',
-  q19: ['sports_physical', 'hobbies_creative'],
-  q20: 'healthy_balance',
-  q21: ['academic_exams', 'placements_career'],
-  q22: 'time_management',
+  q5: 'fairly_easily',
+  q6: 'motivated_improve',
+  q7: ['difficulty_sleeping'],
+  q8: 'good',
+  q9: 'often',
+  q10: ['background_noise', 'academic_workload'],
+  q11: 'no',
+  q12: 'create_plan',
+  q13: 'satisfied',
+  q14: 'somewhat_comfortable',
+  q15: 'hopeful_uncertain',
+  q16: 'comfortable_peaceful',
+  q17: 'mostly_comfortable',
+  q18: ['regular_meals', 'time_to_rest', 'comfortable_place_study'],
+  q19: ['friends', 'family'],
+  q20: 'never',
+  q21: ['sports_physical', 'hobbies_creative'],
+  q22: 'healthy_balance',
+  q23: 'somewhat_connected',
+  q24: ['academic_exams', 'placements_career'],
+  q25: 'time_management',
 };

@@ -81,7 +81,7 @@ export default function ChapterProgress({
           <span className="text-violet-700 font-bold">{sectionProgressPercent}%</span>
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+        <div className="flex items-center gap-2">
           {sectionQuestionIds.map((qId, qIdx) => {
             const isCurrent = qIdx === questionIndexInSection;
             const isDone = isQuestionCompleted(qId);
@@ -89,7 +89,7 @@ export default function ChapterProgress({
             return (
               <div
                 key={qId}
-                className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 ${
+                className={`flex-1 h-2 sm:h-2.5 rounded-full transition-all duration-300 ${
                   isCurrent
                     ? 'bg-violet-600 ring-2 ring-violet-400/40 shadow-sm'
                     : isDone
