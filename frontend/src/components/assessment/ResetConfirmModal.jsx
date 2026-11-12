@@ -32,7 +32,7 @@ export default function ResetConfirmModal({ isOpen, onCancel, onConfirm }) {
             Reset Entire Assessment?
           </h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            This will clear all your answers across all 25 questions and return you to the welcome screen. This action cannot be undone.
+            This will clear all your answers across all 20 questions and return you to the welcome screen. This action cannot be undone.
           </p>
         </div>
 

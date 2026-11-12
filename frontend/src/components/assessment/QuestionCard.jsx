@@ -80,11 +80,16 @@ export default function QuestionCard({
           </p>
         )}
 
-        {/* Optional Research / Dataset Verification Notice (e.g. Q9) */}
-        {question.notice && (
-          <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/90 text-[11px] sm:text-xs text-amber-900 flex items-start gap-2 leading-relaxed">
+        {/* Optional Research / Clarification Notice (e.g. Q6) */}
+        {(question.notice || question.noticeTitle) && (
+          <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200/90 text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed">
             <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <span>{question.notice}</span>
+            <div className="space-y-0.5">
+              {question.noticeTitle && (
+                <div className="font-bold text-amber-950">{question.noticeTitle}</div>
+              )}
+              {question.notice && <div>{question.notice}</div>}
+            </div>
           </div>
         )}
 

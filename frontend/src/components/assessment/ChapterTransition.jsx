@@ -40,7 +40,7 @@ export default function ChapterTransition({
 
         <p className="text-slate-600 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
           {isFinalSection
-            ? "You've successfully answered all 25 questions across all five sections. Take a moment to review your responses before proceeding."
+            ? "You've successfully answered all 20 questions across all five sections. Take a moment to review your responses before proceeding."
             : `Take a gentle breath. You're making steady progress. Next up is Section ${nextSection.sectionNumber}: ${nextSection.title}.`}
         </p>
       </div>

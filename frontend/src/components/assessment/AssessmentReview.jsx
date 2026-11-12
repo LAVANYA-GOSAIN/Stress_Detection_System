@@ -12,13 +12,20 @@ import {
   Info
 } from 'lucide-react';
 import { SECTIONS, QUESTIONS_MAP } from '../../data/questionnaire';
-import { buildFeatureAuditReport } from '../../utils/featureMapping';
+import {
+  buildFeatureAuditReport,
+  buildLivePredictionRequest,
+} from '../../utils/featureMapping';
+
+function createCompletionTimestamp() {
+  return new Date().toISOString();
+}
 
 /**
- * AssessmentReview Component (25-Question Architecture)
+ * AssessmentReview Component (20-Question Architecture)
  *
  * Final review and submission-ready screen:
- * 1. Comprehensive breakdown of all 25 responses across the 5 sections.
+ * 1. Comprehensive breakdown of all 20 responses across the 5 sections.
  * 2. Ability to jump back and edit any section.
  * 3. Transparent MLOps mapping audit for all 20 model features with clinical/psychometric flags.
  * 4. Boundary-respecting handoff to Krish's results dashboard without duplicating API or prediction code.
@@ -32,9 +39,9 @@ export default function AssessmentReview({
   const [expandedSections, setExpandedSections] = useState({
     mind_emotions: true,
     physical_wellbeing: true,
+    living_environment: true,
     academics_future: true,
-    environment_support: true,
-    campus_social_life: true,
+    social_campus_life: true,
   });
 
   const toggleSection = (sectionId) => {
@@ -73,11 +80,14 @@ export default function AssessmentReview({
   };
 
   const handleProceedToResults = () => {
-    // Navigate to Krish's Results page with benchmark inputs structure
+    // Map student answers via the hardened 20-feature converter alongside independent reflection answers
+    const livePredictionRequest = buildLivePredictionRequest(answers);
     navigate('/results', {
       state: {
-        inputs: auditReport.benchmarkDemoPayload,
+        inputs: livePredictionRequest.canSubmit ? livePredictionRequest.payload : null,
+        mlEligibility: livePredictionRequest,
         rawAssessmentAnswers: answers,
+        completedAt: createCompletionTimestamp(),
       },
     });
   };
@@ -89,7 +99,7 @@ export default function AssessmentReview({
       <div className="bg-white rounded-3xl p-8 sm:p-10 border border-purple-100 shadow-sm space-y-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold tracking-wide border border-emerald-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>All 25 Questions Completed</span>
+          <span>All 20 Questions Completed</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -112,7 +122,7 @@ export default function AssessmentReview({
             }`}
           >
             <ClipboardCheck className="w-4 h-4" />
-            <span>Questionnaire Responses (25 Questions)</span>
+            <span>Questionnaire Responses (20 Questions)</span>
           </button>
 
           <button
@@ -242,7 +252,7 @@ export default function AssessmentReview({
               Model Feature Reference & Transparency Matrix
             </h2>
             <p className="text-sm text-slate-600 leading-relaxed max-w-3xl font-normal">
-              Your 25 check-in responses are saved as your personal student self-reflection profile. This section documents the 20 numerical parameters required by the Kaggle-trained machine learning model. To protect your privacy and ensure scientific accuracy, your responses are <strong>not converted into model features</strong> and are <strong>not submitted to the prediction endpoint</strong>.
+              Your 20 check-in responses power your client-side self-reflection profile above. When you proceed, eligible responses are also linearly scaled into the 20 dataset ranges (with optional &quot;Prefer not to say&quot; sensitive items kept as <code className="font-mono text-indigo-700">null</code> for deterministic backend imputation) using MindScope&apos;s <strong>proposed, unverified</strong> feature encoding.
             </p>
           </div>
 
@@ -327,9 +337,9 @@ export default function AssessmentReview({
           <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 text-xs text-indigo-950 flex items-start gap-3">
             <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <div className="font-bold">Student Privacy & Assessment Independence:</div>
+              <div className="font-bold">Educational Transparency &amp; Proposed Encoding Notice:</div>
               <p className="leading-relaxed">
-                MindScope keeps your conversational check-in independent from automated machine learning scoring. Because the original Kaggle dataset did not publish survey questions or scoring keys, converting your answers into numbers would produce unverified estimates. Your responses remain confidential and dedicated solely to your self-reflection.
+                MindScope keeps your five self-reflection dimension scores completely independent of the ML classifier. Because the original Kaggle dataset did not publish survey wording or clinical thresholds, all 1-to-5 rescalings and categorical rules (such as Blood Pressure No=1, Not sure=2, Yes=3) are proposed encodings shown purely for educational exploration.
               </p>
             </div>
           </div>

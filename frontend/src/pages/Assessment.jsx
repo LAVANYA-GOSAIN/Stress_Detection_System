@@ -27,12 +27,11 @@ import ResetConfirmModal from '../components/assessment/ResetConfirmModal';
  * Assessment Page Component (MindScope Student Well-being Check-In)
  *
  * Implements:
- * 1. 25-question, 5-section specification using mixed interaction formats:
- *    - Visual emoji cards (Q2, Q8, Q13)
- *    - Multi-select cards with exclusive safeguards (Q4, Q7, Q10, Q18, Q19, Q21, Q24)
- *    - Scenario & single-choice cards (Q1, Q3, Q5, Q6, Q9, Q11, Q12, Q14, Q15, Q16, Q17, Q20, Q22, Q23, Q25)
- * 2. Hybrid progression: automatic advance on single-choice, Continue button on multi-select.
- * 3. Slim overall progress bar at the top with Question X of 25 and current section name beneath.
+ * 1. 20-question, 5-section specification (4 questions per section) using mixed interaction formats:
+ *    - Visual emoji cards (Q2, Q7, Q13)
+ *    - Single-choice cards (all remaining items)
+ * 2. Automatic advance on single-choice selection.
+ * 3. Slim overall progress bar at the top with Question X of 20 and current section name beneath.
  * 4. Persisted answer state when navigating backwards.
  * 5. Full review screen with individual section editing.
  */
@@ -77,7 +76,7 @@ export default function Assessment() {
   const isLastQuestionOverall = currentQuestionIndex === QUESTIONS_LIST.length - 1;
   const isLastQuestionInSection = questionIndexInSection === totalQuestionsInSection - 1;
 
-  // Overall progress percentage across all 22 questions
+  // Overall progress percentage across all 20 questions
   const overallProgressPercent = Math.min(
     100,
     Math.round(((currentQuestionIndex + 1) / QUESTIONS_LIST.length) * 100)
@@ -253,7 +252,7 @@ export default function Assessment() {
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-100 text-violet-800 text-xs font-bold tracking-wide">
                 <Sparkles className="w-4 h-4 text-violet-600" />
-                <span>5 Sections • 25 Guided Reflections</span>
+                <span>5 Sections • 20 Guided Reflections</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -272,7 +271,7 @@ export default function Assessment() {
                   <Clock className="w-4 h-4 text-violet-600" />
                   <span>3 to 5 Minutes</span>
                 </div>
-                <p className="text-xs text-slate-500">25 thoughtful questions presented one at a time</p>
+                <p className="text-xs text-slate-500">20 thoughtful questions presented one at a time</p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">

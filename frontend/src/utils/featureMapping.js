@@ -12,8 +12,9 @@
  *   All 1-to-5 conversions and categorical encodings (especially blood_pressure: No=1,
  *   Not sure=2, Yes=3) are PROPOSED encodings only and are NOT validated by the
  *   original Kaggle dataset publisher.
- * - Live student answers are NOT yet connected to FastAPI /predict; `benchmarkDemoPayload`
- *   remains the fixed schema-compliant payload submitted for technical ML demonstration.
+ * - Provides `buildLivePredictionRequest()` to evaluate Stage 2 backend eligibility
+ *   (17 required features valid, optional sensitive items Q3, Q6, Q20 permitted as `null`) while
+ *   retaining `benchmarkDemoPayload` as a fixed schema-compliant fallback fixture.
  */
 
 const FREQUENCY_FIVE_POINT_SCORES = {
@@ -617,11 +618,74 @@ export function mapAssessmentAnswersToFeatures(answers = {}) {
   };
 }
 
+export const OPTIONAL_SENSITIVE_FEATURES = [
+  'mental_health_history',
+  'blood_pressure',
+  'bullying',
+];
+
+const OPTIONAL_SENSITIVE_SET = new Set(OPTIONAL_SENSITIVE_FEATURES);
+
+/**
+ * Prepares mapped 20-feature student answers for FastAPI `/predict`, enforcing backend
+ * eligibility guardrails before sending a request:
+ * - All 17 non-optional features must be present and valid (no nulls/invalid values).
+ * - Any or all of the 3 optional sensitive features (`mental_health_history`,
+ *   `blood_pressure`, `bullying`) may be `null` (undisclosed / "Prefer not to say") and are
+ *   filled in the backend via deterministic training-split mode/median imputation.
+ *
+ * @param {Record<string, any>} answers
+ * @returns {{
+ *   canSubmit: boolean,
+ *   payload: Record<string, number|null>|null,
+ *   missingRequiredFeatures: string[],
+ *   missingOptionalFeatures: string[],
+ *   invalidFeatures: string[],
+ *   hasProvisionalBloodPressureNotSure: boolean,
+ *   reason: string|null,
+ *   isProposedEncodingValidated: false
+ * }}
+ */
+export function buildLivePredictionRequest(answers = {}) {
+  const mapped = mapAssessmentAnswersToFeatures(answers);
+  const missingRequiredFeatures = mapped.missingFeatures.filter(
+    (name) => !OPTIONAL_SENSITIVE_SET.has(name)
+  );
+  const missingOptionalFeatures = mapped.missingFeatures.filter((name) =>
+    OPTIONAL_SENSITIVE_SET.has(name)
+  );
+  const hasProvisionalBloodPressureNotSure = answers?.q6 === 'not_sure';
+
+  if (missingRequiredFeatures.length > 0) {
+    return {
+      canSubmit: false,
+      payload: null,
+      missingRequiredFeatures,
+      missingOptionalFeatures,
+      invalidFeatures: mapped.invalidFeatures,
+      hasProvisionalBloodPressureNotSure,
+      reason: `Please complete all required assessment questions before running ML prediction (${missingRequiredFeatures.length} missing required ${missingRequiredFeatures.length === 1 ? 'item' : 'items'}).`,
+      isProposedEncodingValidated: false,
+    };
+  }
+
+  return {
+    canSubmit: true,
+    payload: mapped.convertedFeatures,
+    missingRequiredFeatures,
+    missingOptionalFeatures,
+    invalidFeatures: mapped.invalidFeatures,
+    hasProvisionalBloodPressureNotSure,
+    reason: null,
+    isProposedEncodingValidated: false,
+  };
+}
+
 /**
  * Compiles the MLOps audit report for AssessmentReview & Results.
  *
- * NOTE: `benchmarkDemoPayload` remains fixed schema-compliant reference values matching
- * `app/schemas.py`. Student answers are NOT sent to FastAPI `/predict` in this task.
+ * `benchmarkDemoPayload` remains available as a fixed reference fixture for
+ * technical benchmarking, while `livePredictionRequest` reflects actual mapped answers.
  *
  * @param {Record<string, any>} answers - User responses for q1 to q20
  */

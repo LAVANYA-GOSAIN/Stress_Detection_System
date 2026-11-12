@@ -1,272 +1,221 @@
 /**
- * MindScope Client-Side Self-Reflection Scoring Engine (25-Question Architecture)
+ * MindScope – Client-Side Self-Reflection Scoring Engine (20-Question Edition)
  *
- * ARCHITECTURAL BOUNDARY & ETHICAL GUARANTEES:
- * 1. Independent Client-Side Reflection: Operates entirely on the browser client.
- *    No answers or scores are ever converted to ML features or submitted to FastAPI /predict.
- * 2. 5 Reflection Dimensions:
- *    - Mind & Emotions (Q1, Q4, Q5)
- *    - Physical Well-being (Q8, Q9)
- *    - Academics & Future (Q2, Q6, Q12, Q13, Q14, Q15)
- *    - Living Environment & Safety (Q16, Q17)
- *    - Campus & Social Life (Q20, Q22, Q23)
- * 3. 16 Scored Questions; 9 Descriptive-Only Questions (Q3, Q7, Q10, Q11, Q18, Q19, Q21, Q24, Q25).
- * 4. Missing / Privacy Preservation: "prefer_not_to_say", unanswered, or invalid questions evaluate to null
- *    and are NEVER treated as zero.
- * 5. Dimension Coverage Validation: Dimensions must satisfy minimum valid response thresholds:
- *    - Mind & Emotions: valid Q1, valid Q4, and at least 2 of 3 valid answers (Q5 is optional).
- *    - Physical Well-being: at least 1 of 2 valid answers (Q8, Q9).
- *    - Academics & Future: at least 5 of 6 valid answers (Q2, Q6, Q12, Q13, Q14, Q15).
- *    - Living Environment & Safety: at least 1 of 2 valid answers (Q16, Q17).
- *    - Campus & Social Life: valid Q20, valid Q22, and at least 2 of 3 valid answers (Q23 is optional).
- * 6. NO Overall Score: The overall composite score is deliberately suppressed (overallScore: null)
- *    to prevent misleading aggregation across disparate life domains.
- * 7. Non-Clinical: Purely educational self-reflection; not a clinical or psychological diagnosis.
+ * Pure, deterministic, frontend-only scoring system aligned with the 20-question,
+ * 5-section student check-in (`questionnaire.js`).
+ *
+ * Strictly decoupled from the trained ML model and FastAPI `/predict`:
+ * - Evaluates subjective student reflections (0–100 wellness scale, higher = healthier/more supportive).
+ * - Never converts questionnaire answers into ML dataset encodings.
+ * - Descriptive / sensitive contextual items (`q3`, `q6`, `q19`) and `'prefer_not_to_say'`
+ *   responses (`q20`) never contribute numerical penalties or arbitrary defaults.
+ * - Produces NO clinical diagnosis and suppresses any `overallScore` (`null`).
  */
 
-// Item-level scoring dictionary for single-choice and rating questions
+/**
+ * Approved client-side self-reflection scoring lookup (0–100 wellness scale).
+ * Higher score always reflects more positive wellbeing, comfort, or lower distress.
+ */
 export const SCORED_ITEM_VALUES = {
-  // Dimension 1: Mind & Emotions
+  // Section 1: Mind & Emotions
   q1: {
-    stay_calm: 100,
-    depends_on_situation: 55,
-    avoid_thinking: 40,
-    think_repeatedly: 25,
-    feel_overwhelmed: 0,
-  },
-  q5: {
-    // Emotional Balance & Recovery (NEW)
-    very_easily: 100,
-    fairly_easily: 75,
+    never: 100,
+    rarely: 75,
     sometimes: 50,
-    with_difficulty: 25,
-    very_difficultly: 0,
+    often: 25,
+    almost_always: 0,
   },
-
-  // Dimension 2: Physical Well-being
-  q8: {
-    // Sleep Quality (Original Q7)
-    very_good: 100,
-    good: 75,
-    average: 50,
-    poor: 25,
-    very_poor: 0,
-  },
-  q9: {
-    // Physical Energy & Restfulness (NEW)
-    almost_always: 100,
-    often: 75,
-    sometimes: 50,
-    rarely: 25,
-    almost_never: 0,
-  },
-
-  // Dimension 3: Academics & Future
   q2: {
-    // Task Confidence (Original Q2)
-    very_confident: 100,
-    confident: 75,
-    somewhat_confident: 50,
-    not_very_confident: 25,
-    not_confident_at_all: 0,
+    not_at_all_confident: 0,
+    slightly_confident: 25,
+    moderately_confident: 50,
+    very_confident: 75,
+    extremely_confident: 100,
   },
-  q6: {
-    // Peer Academic Dynamics (Original Q5)
-    happy_for_them: 100,
-    motivated_improve: 90,
-    try_not_to_think: 50,
-    compare_myself: 25,
-    pressured_inadequate: 0,
+  // q3 (mental_health_history) is intentionally descriptive-only
+  q4: {
+    never: 100,
+    rarely: 75,
+    sometimes: 50,
+    often: 25,
+    almost_always: 0,
+  },
+
+  // Section 2: Physical Wellbeing
+  q5: {
+    never: 100,
+    rarely: 75,
+    sometimes: 50,
+    often: 25,
+    almost_always: 0,
+  },
+  // q6 (blood_pressure) is intentionally descriptive-only
+  q7: {
+    very_poor: 0,
+    poor: 25,
+    average: 50,
+    good: 75,
+    excellent: 100,
+  },
+  q8: {
+    never: 100,
+    rarely: 75,
+    sometimes: 50,
+    often: 25,
+    almost_always: 0,
+  },
+
+  // Section 3: Living Environment
+  q9: {
+    not_at_all: 100,
+    slightly: 75,
+    moderately: 50,
+    very_much: 25,
+    extremely: 0,
+  },
+  q10: {
+    very_uncomfortable: 0,
+    uncomfortable: 25,
+    average: 50,
+    comfortable: 75,
+    very_comfortable: 100,
+  },
+  q11: {
+    not_at_all_safe: 0,
+    slightly_safe: 25,
+    moderately_safe: 50,
+    very_safe: 75,
+    completely_safe: 100,
   },
   q12: {
-    // Multiple Deadlines Scenario (Original Q10)
-    create_plan: 100,
-    feel_pressured_manage: 70,
-    struggle_decide: 40,
-    feel_overwhelmed: 15,
-    postpone_last_moment: 0,
+    never: 0,
+    rarely: 25,
+    sometimes: 50,
+    often: 75,
+    always: 100,
   },
+
+  // Section 4: Academics & Future
   q13: {
-    // Academic Satisfaction (Original Q11)
-    very_satisfied: 100,
-    satisfied: 75,
-    neutral: 50,
-    dissatisfied: 25,
     very_dissatisfied: 0,
+    dissatisfied: 25,
+    neutral: 50,
+    satisfied: 75,
+    very_satisfied: 100,
   },
   q14: {
-    // Approaching Instructors (Original Q12)
-    very_comfortable: 100,
-    somewhat_comfortable: 75,
-    prefer_manage_own: 60,
-    not_sure: 50,
-    uncomfortable: 0,
+    not_demanding: 100,
+    slightly_demanding: 75,
+    moderately_demanding: 50,
+    very_demanding: 25,
+    extremely_demanding: 0,
   },
   q15: {
-    // Career & Future Thoughts (Original Q13)
-    excited_opportunities: 100,
-    hopeful_uncertain: 75,
-    confused_direction: 45,
-    worried_opportunity: 20,
-    very_anxious_future: 0,
+    not_at_all_supportive: 0,
+    slightly_supportive: 25,
+    moderately_supportive: 50,
+    very_supportive: 75,
+    extremely_supportive: 100,
   },
-
-  // Dimension 4: Living Environment & Safety
   q16: {
-    // Living Environment (Original Q14)
-    comfortable_peaceful: 100,
-    mostly_comfortable: 75,
-    sometimes_distracting: 40,
-    often_stressful_uncomfortable: 0,
-    prefer_not_to_say: null,
-  },
-  q17: {
-    // Surroundings Safety (Original Q15)
-    completely_comfortable: 100,
-    mostly_comfortable: 75,
-    sometimes_uncomfortable: 40,
-    often_uncomfortable: 0,
-    prefer_not_to_say: null,
+    not_worried: 100,
+    slightly_worried: 75,
+    moderately_worried: 50,
+    very_worried: 25,
+    extremely_worried: 0,
   },
 
-  // Dimension 5: Campus & Social Life
-  q20: {
-    // Interpersonal Respect / Bullying (Original Q18)
+  // Section 5: Social & Campus Life
+  q17: {
+    no_support: 0,
+    very_little_support: 25,
+    some_support: 50,
+    good_support: 75,
+    great_deal_of_support: 100,
+  },
+  q18: {
     never: 100,
-    once_or_twice: 65,
-    sometimes: 30,
-    frequently: 0,
+    rarely: 75,
+    sometimes: 50,
+    often: 25,
+    almost_always: 0,
+  },
+  // q19 (extracurricular_activities) is intentionally descriptive-only
+  q20: {
+    never: 100,
+    rarely: 75,
+    sometimes: 50,
+    often: 25,
+    almost_always: 0,
     prefer_not_to_say: null,
-  },
-  q22: {
-    // Student Life Routine (Original Q20)
-    healthy_balance: 100,
-    routine_changes_frequently: 55,
-    academics_most_time: 50,
-    struggle_manage_time: 20,
-    rarely_time_myself: 10,
-  },
-  q23: {
-    // Campus Community Connection (NEW)
-    very_connected: 100,
-    somewhat_connected: 75,
-    neutral: 50,
-    slightly_disconnected: 25,
-    very_disconnected: 0,
   },
 };
 
 /**
- * Score Q4 (Recent Emotional State, Multi-Select)
- * Normalizes 2 positive vs 4 challenging emotions into [0, 100].
- * Formula: Q4 Score = (P / 2 * 50) + (1 - C / 4) * 50
- *
- * @param {string[]} selectedValues - Array of selected option keys
- * @returns {number|null} Score between 0 and 100, or null if empty/no valid option selected
- */
-export function scoreRecentEmotions(selectedValues) {
-  if (!Array.isArray(selectedValues) || selectedValues.length === 0) {
-    return null;
-  }
-
-  const positiveOptions = ['happy_positive', 'calm_relaxed'];
-  const challengingOptions = [
-    'emotionally_exhausted',
-    'low_sad',
-    'anxious_worried',
-    'unmotivated',
-  ];
-
-  // Deduplicate entries to prevent duplicate selection anomalies
-  const uniqueValues = [...new Set(selectedValues)];
-
-  const posCount = uniqueValues.filter((v) => positiveOptions.includes(v)).length;
-  const chalCount = uniqueValues.filter((v) => challengingOptions.includes(v)).length;
-
-  // If no recognized positive or challenging options were chosen, treat as unanswered (null)
-  if (posCount === 0 && chalCount === 0) {
-    return null;
-  }
-
-  const posPart = (posCount / 2) * 50;
-  const chalPart = (1 - chalCount / 4) * 50;
-  const rawScore = posPart + chalPart;
-
-  return Math.round(rawScore * 10) / 10;
-}
-
-/**
- * Dimension Configurations & Coverage Rules
+ * 5 Reflection Dimensions aligned 1-to-1 with the 5 assessment sections.
  */
 export const DIMENSIONS_CONFIG = [
   {
     id: 'mind_emotions',
     name: 'Mind & Emotions',
     sectionNumber: 1,
-    scoredQuestionIds: ['q1', 'q4', 'q5'],
-    requiredQuestionIds: ['q1', 'q4'],
+    scoredQuestionIds: ['q1', 'q2', 'q4'],
     requiredCount: 2,
-    coverageRequirementText: 'At least 2 of 3 valid answers, including Q1 and Q4.',
+    requiredQuestionIds: [],
+    coverageRequirementText: 'Requires at least 2 of 3 scored responses in Mind & Emotions (Q1, Q2, Q4).',
   },
   {
     id: 'physical_wellbeing',
-    name: 'Physical Well-being',
+    name: 'Physical Wellbeing',
     sectionNumber: 2,
-    scoredQuestionIds: ['q8', 'q9'],
+    scoredQuestionIds: ['q5', 'q7', 'q8'],
+    requiredCount: 2,
     requiredQuestionIds: [],
-    requiredCount: 1,
-    coverageRequirementText: 'At least 1 of 2 valid answers.',
+    coverageRequirementText: 'Requires at least 2 of 3 scored responses in Physical Wellbeing (Q5, Q7, Q8).',
+  },
+  {
+    id: 'living_environment',
+    name: 'Living Environment',
+    sectionNumber: 3,
+    scoredQuestionIds: ['q9', 'q10', 'q11', 'q12'],
+    requiredCount: 2,
+    requiredQuestionIds: [],
+    coverageRequirementText: 'Requires at least 2 of 4 scored responses in Living Environment (Q9–Q12).',
   },
   {
     id: 'academics_future',
     name: 'Academics & Future',
-    sectionNumber: 3,
-    scoredQuestionIds: ['q2', 'q6', 'q12', 'q13', 'q14', 'q15'],
-    requiredQuestionIds: [],
-    requiredCount: 5,
-    coverageRequirementText: 'At least 5 of 6 valid answers.',
-  },
-  {
-    id: 'living_environment_safety',
-    name: 'Living Environment & Safety',
     sectionNumber: 4,
-    scoredQuestionIds: ['q16', 'q17'],
+    scoredQuestionIds: ['q13', 'q14', 'q15', 'q16'],
+    requiredCount: 2,
     requiredQuestionIds: [],
-    requiredCount: 1,
-    coverageRequirementText: 'At least 1 of 2 valid answers.',
+    coverageRequirementText: 'Requires at least 2 of 4 scored responses in Academics & Future (Q13–Q16).',
   },
   {
-    id: 'campus_social_life',
-    name: 'Campus & Social Life',
+    id: 'social_campus_life',
+    name: 'Social & Campus Life',
     sectionNumber: 5,
-    scoredQuestionIds: ['q20', 'q22', 'q23'],
-    requiredQuestionIds: ['q20', 'q22'],
+    scoredQuestionIds: ['q17', 'q18', 'q20'],
     requiredCount: 2,
-    coverageRequirementText: 'At least 2 of 3 valid answers, including Q20 and Q22.',
+    requiredQuestionIds: [],
+    coverageRequirementText: 'Requires at least 2 of 3 scored responses in Social & Campus Life (Q17, Q18, Q20).',
   },
 ];
 
 /**
- * 9 Strictly Descriptive Questions (Unscored)
+ * Descriptive-only questions that never contribute to numerical reflection dimension averages:
+ * - q3: mental health support history (sensitive binary/contextual check)
+ * - q6: blood pressure concern check (sensitive health indicator)
+ * - q19: extracurricular activity frequency (participation context, not assumed stressful/healthy)
  */
-export const DESCRIPTIVE_QUESTION_IDS = [
-  'q3',  // Mental Health Background
-  'q7',  // Physical Discomfort
-  'q10', // Concentration Distractions
-  'q11', // Blood Pressure History
-  'q18', // Everyday Needs
-  'q19', // Support Network
-  'q21', // Time Outside Academics
-  'q24', // Sources of Pressure
-  'q25', // Priority for Improvement
-];
+export const DESCRIPTIVE_QUESTION_IDS = ['q3', 'q6', 'q19'];
 
 /**
- * Score a single question
- * Returns numerical score (0–100) or null if omitted, undisclosed, or invalid.
+ * Score a single question on the 0–100 self-reflection scale.
+ * Returns null if unanswered, descriptive-only, unrecognized, or `'prefer_not_to_say'`.
  *
  * @param {string} questionId - e.g. 'q1'
- * @param {any} answer - Student's answer string or array
+ * @param {any} answer - Student's selected option value
  * @returns {number|null} Score between 0 and 100, or null
  */
 export function scoreItem(questionId, answer) {
@@ -274,43 +223,34 @@ export function scoreItem(questionId, answer) {
     return null;
   }
 
-  // Handle Q4 special multi-select
-  if (questionId === 'q4') {
-    return scoreRecentEmotions(answer);
-  }
-
-  // Lookup in scored item values dictionary
-  const mapping = SCORED_ITEM_VALUES[questionId];
-  if (!mapping) {
-    // If not in scored dictionary (e.g. descriptive items or unrecognized IDs), return null
-    return null;
-  }
-
   if (typeof answer !== 'string') {
     return null;
   }
 
+  const mapping = SCORED_ITEM_VALUES[questionId];
+  if (!mapping) {
+    return null;
+  }
+
   const val = mapping[answer];
-  return (val !== undefined && val !== null) ? val : null;
+  return typeof val === 'number' && !Number.isNaN(val) ? val : null;
 }
 
 /**
- * Calculate reflection dimension scores from student responses
+ * Calculate client-side reflection dimension scores from student responses.
  *
- * @param {Record<string, any>} answers - Student response map (e.g. { q1: 'stay_calm', ... })
- * @returns {Object} Calculated dimensions, item-level scores, descriptive summaries, and coverage states.
+ * @param {Record<string, any>} answers - Student response map (e.g. { q1: 'rarely', ... })
+ * @returns {Object} Calculated dimensions, item-level scores, descriptive profile, and metadata
  */
 export function calculateReflectionScores(answers = {}) {
   const itemScores = {};
 
-  // 1. Calculate individual scores for all 16 scored questions
   DIMENSIONS_CONFIG.forEach((dim) => {
     dim.scoredQuestionIds.forEach((qId) => {
       itemScores[qId] = scoreItem(qId, answers ? answers[qId] : undefined);
     });
   });
 
-  // 2. Calculate each of the 5 dimension scores with strict coverage validation
   const dimensionResults = DIMENSIONS_CONFIG.map((dim) => {
     const validAnswers = {};
     const validQuestionIds = [];
@@ -360,22 +300,25 @@ export function calculateReflectionScores(answers = {}) {
     };
   });
 
-  // 3. Extract descriptive items without numerical scoring
   const descriptiveProfile = {};
   DESCRIPTIVE_QUESTION_IDS.forEach((qId) => {
     const val = answers ? answers[qId] : undefined;
     descriptiveProfile[qId] = val !== undefined ? val : null;
   });
 
-  // 4. Guarantee NO overall score is generated
+  const scoredQuestionCount = DIMENSIONS_CONFIG.reduce(
+    (sum, dim) => sum + dim.scoredQuestionIds.length,
+    0
+  );
+
   return {
     dimensions: dimensionResults,
     itemScores,
     descriptiveProfile,
-    overallScore: null, // Deliberately suppressed per specification
+    overallScore: null, // Deliberately suppressed — never compute an overall stress/wellness grade
     isNonClinical: true,
-    totalQuestions: 25,
-    scoredQuestionCount: 16,
-    descriptiveQuestionCount: 9,
+    totalQuestions: 20,
+    scoredQuestionCount,
+    descriptiveQuestionCount: DESCRIPTIVE_QUESTION_IDS.length,
   };
 }

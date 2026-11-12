@@ -5,6 +5,7 @@ import {
   convertFivePointToRange,
   mapAnswerToFeatureValue,
   mapAssessmentAnswersToFeatures,
+  buildLivePredictionRequest,
   buildFeatureAuditReport,
 } from './featureMapping.js';
 import { SAMPLE_VIVA_RESPONSES } from '../data/questionnaire.js';
@@ -260,5 +261,99 @@ describe('MindScope 20-Feature Mapping & Proposed Dataset Range Conversion (Hard
     assert.deepEqual(Object.keys(reportFilled.benchmarkDemoPayload), EXPECTED_FEATURE_ORDER);
     assert.deepEqual(reportEmpty.benchmarkDemoPayload, reportFilled.benchmarkDemoPayload);
     assert.deepEqual(reportInvalid.benchmarkDemoPayload, reportFilled.benchmarkDemoPayload);
+  });
+
+  test('buildLivePredictionRequest preserves exact feature order and unrounded decimals on eligible answers', () => {
+    const res = buildLivePredictionRequest(SAMPLE_VIVA_RESPONSES);
+
+    assert.equal(res.canSubmit, true);
+    assert.equal(res.isProposedEncodingValidated, false);
+    assert.equal(res.reason, null);
+    assert.deepEqual(res.missingRequiredFeatures, []);
+    assert.deepEqual(res.missingOptionalFeatures, []);
+    assert.deepEqual(res.invalidFeatures, []);
+    assert.equal(res.hasProvisionalBloodPressureNotSure, false);
+    assert.deepEqual(Object.keys(res.payload), EXPECTED_FEATURE_ORDER);
+
+    // Exact unrounded decimal checks
+    assert.equal(res.payload.anxiety_level, 5.25);
+    assert.equal(res.payload.self_esteem, 22.5);
+    assert.equal(res.payload.depression, 6.75);
+    assert.equal(res.payload.headache, 1.25);
+    assert.equal(res.payload.sleep_quality, 3.75);
+    assert.equal(res.payload.social_support, 2.25);
+    assert.equal(res.payload.extracurricular_activities, 2.5);
+  });
+
+  test('buildLivePredictionRequest permits 0, 1, 2, and 3 optional nulls and flags provisional blood_pressure not_sure', () => {
+    // 0 nulls (all 20 answers provided)
+    const zeroNulls = buildLivePredictionRequest(SAMPLE_VIVA_RESPONSES);
+    assert.equal(zeroNulls.canSubmit, true);
+    assert.deepEqual(zeroNulls.missingOptionalFeatures, []);
+    assert.equal(zeroNulls.hasProvisionalBloodPressureNotSure, false);
+
+    // 1 null + Q6 not_sure (maps to 2, not missing)
+    const oneNullWithNotSure = buildLivePredictionRequest({
+      ...SAMPLE_VIVA_RESPONSES,
+      q3: 'prefer_not_to_say',
+      q6: 'not_sure',
+    });
+    assert.equal(oneNullWithNotSure.canSubmit, true);
+    assert.equal(oneNullWithNotSure.hasProvisionalBloodPressureNotSure, true);
+    assert.equal(oneNullWithNotSure.payload.mental_health_history, null);
+    assert.equal(oneNullWithNotSure.payload.blood_pressure, 2);
+    assert.deepEqual(oneNullWithNotSure.missingOptionalFeatures, ['mental_health_history']);
+
+    // 2 nulls
+    const twoNulls = buildLivePredictionRequest({
+      ...SAMPLE_VIVA_RESPONSES,
+      q3: 'prefer_not_to_say',
+      q20: 'prefer_not_to_say',
+    });
+    assert.equal(twoNulls.canSubmit, true);
+    assert.equal(twoNulls.payload.mental_health_history, null);
+    assert.equal(twoNulls.payload.bullying, null);
+    assert.deepEqual(twoNulls.missingOptionalFeatures, ['mental_health_history', 'bullying']);
+
+    // All 3 optional items null must now be permitted for privacy preservation
+    const threeOptionalNulls = buildLivePredictionRequest({
+      ...SAMPLE_VIVA_RESPONSES,
+      q3: 'prefer_not_to_say',
+      q6: 'prefer_not_to_say',
+      q20: 'prefer_not_to_say',
+    });
+    assert.equal(threeOptionalNulls.canSubmit, true);
+    assert.ok(threeOptionalNulls.payload !== null);
+    assert.equal(threeOptionalNulls.payload.mental_health_history, null);
+    assert.equal(threeOptionalNulls.payload.blood_pressure, null);
+    assert.equal(threeOptionalNulls.payload.bullying, null);
+    assert.deepEqual(threeOptionalNulls.missingOptionalFeatures, [
+      'mental_health_history',
+      'blood_pressure',
+      'bullying',
+    ]);
+    assert.equal(threeOptionalNulls.reason, null);
+  });
+
+  test('buildLivePredictionRequest blocks missing or invalid required answers without coercion', () => {
+    const missingRequired = buildLivePredictionRequest({
+      ...SAMPLE_VIVA_RESPONSES,
+      q1: undefined,
+      q4: '',
+    });
+    assert.equal(missingRequired.canSubmit, false);
+    assert.equal(missingRequired.payload, null);
+    assert.deepEqual(missingRequired.missingRequiredFeatures, ['anxiety_level', 'depression']);
+    assert.match(missingRequired.reason, /2 missing required items/i);
+
+    const invalidRequired = buildLivePredictionRequest({
+      ...SAMPLE_VIVA_RESPONSES,
+      q1: 'constructor',
+      q17: 999,
+    });
+    assert.equal(invalidRequired.canSubmit, false);
+    assert.equal(invalidRequired.payload, null);
+    assert.deepEqual(invalidRequired.missingRequiredFeatures, ['anxiety_level', 'social_support']);
+    assert.deepEqual(invalidRequired.invalidFeatures, ['anxiety_level', 'social_support']);
   });
 });
