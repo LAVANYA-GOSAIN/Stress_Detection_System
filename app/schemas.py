@@ -209,18 +209,15 @@ class StressPredictionRequest(BaseModel):
         """Enforce missing-value guardrails on optional features."""
         values = self.model_dump()
         missing_fields = [name for name, val in values.items() if val is None]
+        optional_fields = {"mental_health_history", "blood_pressure", "bullying"}
+
+        disallowed = [name for name in missing_fields if name not in optional_fields]
+        if disallowed:
+            raise ValueError(f"Missing value is not supported for required feature(s): {disallowed}.")
 
         if len(missing_fields) > 3:
             raise ValueError(
-                f"Too many missing features ({len(missing_fields)}): at most 2 permitted optional features "
-                "may be null; requests with more than 3 missing features are rejected."
-            )
-
-        optional_fields = ("mental_health_history", "blood_pressure", "bullying")
-        if all(values.get(field) is None for field in optional_fields):
-            raise ValueError(
-                "Too many missing optional features (3 of 3 null): all three optional fields "
-                "(mental_health_history, blood_pressure, bullying) cannot be missing simultaneously."
+                f"Too many missing features ({len(missing_fields)}): at most 3 optional features may be null."
             )
 
         return self

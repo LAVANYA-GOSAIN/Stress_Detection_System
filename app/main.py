@@ -131,17 +131,7 @@ def apply_deterministic_imputation(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"Too many missing features ({len(missing_fields)}): requests with more than "
-                "3 missing features are rejected."
-            ),
-        )
-
-    if all(feature_dict.get(name) is None for name in OPTIONAL_NULLABLE_FEATURES):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                "Too many missing optional features (3 of 3 null): all three optional fields "
-                "(mental_health_history, blood_pressure, bullying) cannot be missing simultaneously."
+                f"Too many missing features ({len(missing_fields)}): at most 3 optional features may be null; requests with more than 3 missing features are rejected."
             ),
         )
 
