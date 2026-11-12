@@ -231,16 +231,24 @@ def test_predict_imputes_two_optional_nulls(client, valid_payload):
     assert data["imputed_features"] == ["mental_health_history", "bullying"]
 
 
-def test_predict_rejects_all_three_optional_fields_missing(client, valid_payload):
-    """Verify requests with all three optional sensitive fields null are rejected with 422."""
+def test_predict_imputes_all_three_optional_nulls(client, valid_payload):
+    """Verify requests with all three optional sensitive fields null succeed with deterministic imputation."""
     payload = valid_payload.copy()
     payload["mental_health_history"] = None
     payload["blood_pressure"] = None
     payload["bullying"] = None
 
     res = client.post("/predict", json=payload)
-    assert res.status_code == 422
-    assert "all three optional fields" in res.text.lower()
+    assert res.status_code == 200
+    data = res.json()
+    assert data["predicted_class"] in [0, 1, 2]
+    assert data["imputed_features"] == [
+        "mental_health_history",
+        "blood_pressure",
+        "bullying",
+    ]
+    assert "training_split_deterministic" in data["imputation_method"]
+    assert data["uses_proposed_questionnaire_encoding"] is True
 
 
 def test_predict_rejects_required_null_and_over_three_missing(client, valid_payload):
@@ -249,6 +257,13 @@ def test_predict_rejects_required_null_and_over_three_missing(client, valid_payl
     payload_req_null["anxiety_level"] = None
     assert client.post("/predict", json=payload_req_null).status_code == 422
 
+    # Required field null among optional fields still rejected
+    payload_required_with_optionals = valid_payload.copy()
+    payload_required_with_optionals["mental_health_history"] = None
+    payload_required_with_optionals["anxiety_level"] = None
+    assert client.post("/predict", json=payload_required_with_optionals).status_code == 422
+
+    # 4 nulls (3 optional + 1 required) rejected by limit
     payload_four_nulls = valid_payload.copy()
     payload_four_nulls["mental_health_history"] = None
     payload_four_nulls["blood_pressure"] = None
@@ -286,5 +301,3 @@ def test_training_imputation_statistics_and_feature_order(valid_payload):
     assert resolved["blood_pressure"] == 3
     assert resolved["bullying"] == 3.0
     assert imputed == ["blood_pressure", "bullying"]
-
-
