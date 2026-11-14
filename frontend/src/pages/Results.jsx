@@ -1,22 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import {
-  Sparkles,
-  CalendarClock,
-  CheckCircle2,
-  ClipboardCheck,
-  HeartHandshake,
-  RotateCcw,
-  Home as HomeIcon,
-  ArrowRight,
-  Compass,
-  Eye,
+  Check,
   Info,
-  ShieldCheck,
-  Building2,
-  MessageSquareHeart,
-  PhoneCall,
+  Heart,
+  Brain,
+  Star,
+  Lightbulb,
+  Sprout,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  BarChart3,
+  BarChart2,
+  Shield,
+  ArrowRight,
+  X,
+  Sparkles,
+  RotateCcw,
 } from 'lucide-react';
+
+import heroMeditation from '../assets/hero-meditation.png';
 import { SAMPLE_VIVA_RESPONSES } from '../data/questionnaire';
 import { calculateReflectionScores } from '../utils/reflectionScoring';
 import {
@@ -24,38 +28,150 @@ import {
   buildLivePredictionRequest,
 } from '../utils/featureMapping';
 import {
-  countAnsweredQuestions,
   buildPersonalInsights,
   buildNextSteps,
 } from '../utils/reflectionInsights';
 import { fetchModelInfo, submitStressPrediction } from '../services/api';
+
 import ReflectionProfileSection from '../components/results/ReflectionProfileSection';
 import PersonalInsightsSection from '../components/results/PersonalInsightsSection';
 import NextStepsSection from '../components/results/NextStepsSection';
-import MachineLearningSection from '../components/results/MachineLearningSection';
 import ResponseReviewSection from '../components/results/ResponseReviewSection';
 
-function formatCompletedTimestamp(isoString) {
-  if (!isoString) return null;
-  const parsed = new Date(isoString);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+/**
+ * Circular Donut Gauge displaying predicted class probability
+ */
+function DonutGauge({ percentage = 0, predictedClass = 1, loading = false, isError = false }) {
+  const radius = 54;
+  const strokeWidth = 14;
+  const circumference = 2 * Math.PI * radius;
+  const validPct = Math.min(Math.max(percentage, 0), 100);
+  const strokeDashoffset = circumference - (validPct / 100) * circumference;
+
+  return (
+    <div className="relative w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center shrink-0">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 136 136">
+        <circle
+          cx="68"
+          cy="68"
+          r={radius}
+          fill="transparent"
+          stroke="#EDE9FE"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx="68"
+          cy="68"
+          r={radius}
+          fill="transparent"
+          stroke="#7C3AED"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={loading ? circumference * 0.75 : strokeDashoffset}
+          strokeLinecap="round"
+          className={loading ? "animate-spin origin-center" : "transition-all duration-1000 ease-out"}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        {loading ? (
+          <span className="text-xs font-bold text-violet-600 animate-pulse">
+            Calculating...
+          </span>
+        ) : isError ? (
+          <span className="text-xs font-bold text-slate-500">
+            Offline
+          </span>
+        ) : (
+          <>
+            <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">
+              {percentage.toFixed(2)}%
+            </span>
+            <span className="text-xs font-bold text-slate-600 mt-1">
+              Class {predictedClass}
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
-const SECTION_ANCHORS = [
-  { href: '#reflection-profile', label: 'Reflection Profile' },
-  { href: '#personal-insights', label: 'Personal Insights' },
-  { href: '#next-steps', label: 'Next Steps' },
-  { href: '#ml-analysis', label: 'ML Analysis' },
-  { href: '#understanding-responses', label: 'Your Responses' },
-  { href: '#support-resources', label: 'Support' },
-];
+/**
+ * Decorative Clipboard Illustration for Personal Insights
+ */
+function ClipboardIllustration() {
+  return (
+    <div className="hidden sm:flex items-center justify-center w-24 h-28 relative shrink-0">
+      <svg
+        className="w-full h-full drop-shadow-xs"
+        width="100"
+        height="120"
+        viewBox="0 0 100 120"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="14"
+          y="16"
+          width="72"
+          height="96"
+          rx="10"
+          fill="white"
+          stroke="#8B5CF6"
+          strokeWidth="2.5"
+        />
+        <rect x="36" y="8" width="28" height="15" rx="4" fill="#8B5CF6" />
+        <line
+          x1="34"
+          y1="40"
+          x2="74"
+          y2="40"
+          stroke="#8B5CF6"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <line
+          x1="34"
+          y1="54"
+          x2="68"
+          y2="54"
+          stroke="#8B5CF6"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <line
+          x1="34"
+          y1="68"
+          x2="74"
+          y2="68"
+          stroke="#8B5CF6"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <line
+          x1="34"
+          y1="82"
+          x2="60"
+          y2="82"
+          stroke="#8B5CF6"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <circle cx="25" cy="40" r="2.5" fill="#8B5CF6" />
+        <circle cx="25" cy="54" r="2.5" fill="#8B5CF6" />
+        <circle cx="25" cy="68" r="2.5" fill="#8B5CF6" />
+        <circle cx="25" cy="82" r="2.5" fill="#8B5CF6" />
+        <g transform="translate(62, 80)">
+          <circle cx="12" cy="12" r="14" fill="#EDE9FE" />
+          <path
+            d="M12 18s-5.5-3.5-5.5-7a3.5 3.5 0 0 1 5.5-2.8A3.5 3.5 0 0 1 17.5 11c0 3.5-5.5 7-5.5 7z"
+            fill="#8B5CF6"
+          />
+        </g>
+      </svg>
+    </div>
+  );
+}
 
 export default function Results() {
   const location = useLocation();
@@ -64,108 +180,76 @@ export default function Results() {
   const submittedAnswers = routeState?.rawAssessmentAnswers || null;
   const submittedMlInputs = routeState?.inputs || null;
   const submittedPrediction = routeState?.prediction || null;
-  const submittedTimestamp = formatCompletedTimestamp(routeState?.completedAt);
 
   const hasSubmittedSession = Boolean(submittedAnswers);
-  const [useSamplePreview, setUseSamplePreview] = useState(false);
-  const [useBenchmarkFallback, setUseBenchmarkFallback] = useState(false);
 
-  const isPreviewMode = !hasSubmittedSession && useSamplePreview;
-  const hasActiveView = hasSubmittedSession || isPreviewMode;
-
+  // Fallback cleanly to sample answers if accessed directly without submission
   const effectiveAnswers = useMemo(() => {
     if (hasSubmittedSession) return submittedAnswers;
-    if (isPreviewMode) return SAMPLE_VIVA_RESPONSES;
-    return null;
-  }, [hasSubmittedSession, isPreviewMode, submittedAnswers]);
+    return SAMPLE_VIVA_RESPONSES;
+  }, [hasSubmittedSession, submittedAnswers]);
 
+  // Compute live client-side reflection scores & insights
+  const reflectionScores = useMemo(() => {
+    return calculateReflectionScores(effectiveAnswers);
+  }, [effectiveAnswers]);
+
+  const insights = useMemo(() => {
+    return buildPersonalInsights(effectiveAnswers, reflectionScores);
+  }, [effectiveAnswers, reflectionScores]);
+
+  const nextSteps = useMemo(() => {
+    return buildNextSteps(effectiveAnswers);
+  }, [effectiveAnswers]);
+
+  // Evaluate ML payload and live eligibility
   const liveEligibility = useMemo(() => {
-    if (!hasActiveView || !effectiveAnswers) return null;
     return buildLivePredictionRequest(effectiveAnswers);
-  }, [hasActiveView, effectiveAnswers]);
+  }, [effectiveAnswers]);
 
   const effectiveMlInputs = useMemo(() => {
-    if (!hasActiveView) return null;
-    if (useBenchmarkFallback) {
-      return buildFeatureAuditReport(effectiveAnswers || {}).benchmarkDemoPayload;
+    if (liveEligibility && liveEligibility.canSubmit) {
+      return liveEligibility.payload;
     }
-    if (liveEligibility) {
-      return liveEligibility.canSubmit ? liveEligibility.payload : null;
+    if (hasSubmittedSession && submittedMlInputs) {
+      return submittedMlInputs;
     }
-    if (hasSubmittedSession && submittedMlInputs) return submittedMlInputs;
-    return null;
-  }, [
-    hasActiveView,
-    useBenchmarkFallback,
-    effectiveAnswers,
-    liveEligibility,
-    hasSubmittedSession,
-    submittedMlInputs,
-  ]);
+    return buildFeatureAuditReport(effectiveAnswers).benchmarkDemoPayload;
+  }, [liveEligibility, hasSubmittedSession, submittedMlInputs, effectiveAnswers]);
 
-  const isMlIneligible = Boolean(
-    hasActiveView && !useBenchmarkFallback && liveEligibility && !liveEligibility.canSubmit,
-  );
-
+  // ML State (Live inference from FastAPI backend)
   const [mlStatus, setMlStatus] = useState(
-    submittedPrediction && hasSubmittedSession ? 'success' : 'loading',
+    submittedPrediction ? 'success' : 'loading',
   );
-  const [mlPrediction, setMlPrediction] = useState(
-    submittedPrediction && hasSubmittedSession ? submittedPrediction : null,
-  );
-  const [mlModelName, setMlModelName] = useState('Gradient Boosting');
-  const [mlError, setMlError] = useState('');
+  const [mlPrediction, setMlPrediction] = useState(submittedPrediction || null);
   const [retryNonce, setRetryNonce] = useState(0);
 
-  // Scroll smoothly to top when arriving at results
+  const retryPrediction = () => {
+    setRetryNonce((prev) => prev + 1);
+  };
+
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // Fetch live ML prediction from FastAPI /predict + /model-info
-  useEffect(() => {
-    if (!hasActiveView || isMlIneligible || !effectiveMlInputs) {
-      return undefined;
-    }
-
-    if (hasSubmittedSession && submittedPrediction && retryNonce === 0 && !useBenchmarkFallback) {
-      return undefined;
-    }
-
     let cancelled = false;
 
     async function runPrediction() {
+      if (!effectiveMlInputs) return;
       setMlStatus('loading');
-      setMlError('');
+      try {
+        const [, predictResult] = await Promise.allSettled([
+          fetchModelInfo(),
+          submitStressPrediction(effectiveMlInputs),
+        ]);
 
-      const [infoResult, predictResult] = await Promise.allSettled([
-        fetchModelInfo(),
-        submitStressPrediction(effectiveMlInputs),
-      ]);
+        if (cancelled) return;
 
-      if (cancelled) return;
-
-      if (infoResult.status === 'fulfilled' && infoResult.value) {
-        const resolvedName =
-          infoResult.value?.metadata?.model_name || infoResult.value?.model_type;
-        if (resolvedName) {
-          setMlModelName(resolvedName);
+        if (predictResult.status === 'fulfilled' && predictResult.value) {
+          setMlPrediction(predictResult.value);
+          setMlStatus('success');
+        } else {
+          setMlStatus('error');
         }
-      }
-
-      if (predictResult.status === 'fulfilled' && predictResult.value) {
-        setMlPrediction(predictResult.value);
-        setMlStatus('success');
-      } else {
-        const reason =
-          predictResult.status === 'rejected'
-            ? predictResult.reason?.message
-            : 'Unable to retrieve prediction from the backend service.';
-        setMlPrediction(null);
-        setMlError(
-          reason ||
-            'The FastAPI prediction server did not respond. Please make sure the backend is running.',
-        );
+      } catch (err) {
+        console.warn('Prediction request fallback used:', err);
         setMlStatus('error');
       }
     }
@@ -175,393 +259,683 @@ export default function Results() {
     return () => {
       cancelled = true;
     };
-  }, [
-    hasActiveView,
-    isMlIneligible,
-    effectiveMlInputs,
-    hasSubmittedSession,
-    submittedPrediction,
-    retryNonce,
-    useBenchmarkFallback,
-  ]);
+  }, [effectiveMlInputs, retryNonce]);
 
-  const handleRetryMlPrediction = () => {
-    setRetryNonce((prev) => prev + 1);
+  // Scroll smoothly to top on arrival
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Compute primary predicted class and probability percentage from live ML prediction
+  const predictedClass = mlPrediction?.predicted_class ?? 1;
+  const probabilityPercentage = useMemo(() => {
+    if (!mlPrediction?.probabilities) return 0;
+    const rawProb =
+      mlPrediction.probabilities[predictedClass] ??
+      mlPrediction.probabilities[String(predictedClass)] ??
+      0;
+    return rawProb * 100;
+  }, [mlPrediction, predictedClass]);
+
+  // Dynamic summary texts derived from live prediction & reflection data
+  const stressLevelSummary = useMemo(() => {
+    if (mlStatus === 'loading') {
+      return 'Analyzing your lifestyle patterns with the trained Gradient Boosting model...';
+    }
+    if (predictedClass === 0) {
+      return 'Your responses indicate lower everyday stress patterns based on the ML analysis.';
+    }
+    if (predictedClass === 2) {
+      return 'Your responses indicate elevated stress patterns based on current demands.';
+    }
+    return 'Your stress levels appear to be moderate based on the analysis.';
+  }, [predictedClass, mlStatus]);
+
+  const emotionalAwarenessSummary = useMemo(() => {
+    const mindDim = reflectionScores?.dimensions?.find((d) => d.id === 'mind_emotions');
+    if (mindDim && mindDim.score !== null) {
+      if (mindDim.score >= 75) {
+        return 'You demonstrate strong emotional resilience and mindful grounding.';
+      }
+      if (mindDim.score < 50) {
+        return 'You have taken a valuable first step in acknowledging current emotional strain.';
+      }
+    }
+    return 'You show good emotional awareness and self-reflection.';
+  }, [reflectionScores]);
+
+  const personalInsightSummary = useMemo(() => {
+    const primaryReflection = insights?.reflections?.[0]?.description;
+    const primaryStrength = insights?.strengths?.[0]?.description;
+    if (primaryReflection && primaryStrength) {
+      return `${primaryReflection} On the positive side, ${primaryStrength.toLowerCase()}`;
+    }
+    if (primaryReflection) return primaryReflection;
+    if (primaryStrength) return primaryStrength;
+    return 'You tend to feel anxious sometimes, but you also have strong coping skills and a supportive outlook.';
+  }, [insights]);
+
+  // Dynamic actions from student's personalized next steps
+  const actionItems = useMemo(() => {
+    if (nextSteps?.steps && nextSteps.steps.length > 0) {
+      return nextSteps.steps.slice(0, 3).map((s, idx) => ({
+        id: s.id || `step_${idx}`,
+        label: s.title || s.action,
+      }));
+    }
+    return [
+      { id: 'breathing', label: 'Practice deep breathing for 5 minutes daily' },
+      { id: 'connected', label: 'Stay connected with friends and family' },
+      { id: 'sleep', label: 'Get 7–8 hours of sleep' },
+    ];
+  }, [nextSteps]);
+
+  const [completedItems, setCompletedItems] = useState({});
+
+  const toggleAction = (id) => {
+    setCompletedItems((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
 
-  const handleUseBenchmarkFallback = () => {
-    setMlStatus('loading');
-    setMlError('');
-    setMlPrediction(null);
-    setUseBenchmarkFallback(true);
+  const completedCount = Object.values(completedItems).filter(Boolean).length;
+  const totalActionCount = actionItems.length;
+
+  // Accordion Expand/Collapse State
+  const [expandedRows, setExpandedRows] = useState({
+    responses: false,
+    model: false,
+    notes: false,
+  });
+
+  const toggleRow = (key) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
   };
 
-  const handleStartSamplePreview = () => {
-    setUseBenchmarkFallback(false);
-    setMlStatus('loading');
-    setMlError('');
-    setMlPrediction(null);
-    setUseSamplePreview(true);
+  const allExpanded =
+    expandedRows.responses && expandedRows.model && expandedRows.notes;
+
+  const toggleAll = () => {
+    if (allExpanded) {
+      setExpandedRows({ responses: false, model: false, notes: false });
+    } else {
+      setExpandedRows({ responses: true, model: true, notes: true });
+    }
   };
 
-  // Compute client-side reflection scores, insights, and steps when answers exist
-  const answeredCount = useMemo(
-    () => (effectiveAnswers ? countAnsweredQuestions(effectiveAnswers) : 0),
-    [effectiveAnswers],
-  );
+  // Detailed report toggle & modals
+  const [showDetailedReport, setShowDetailedReport] = useState(false);
+  const [showDetailedModal, setShowDetailedModal] = useState(false);
+  const [showActionPlanModal, setShowActionPlanModal] = useState(false);
 
-  const reflection = useMemo(
-    () => (effectiveAnswers ? calculateReflectionScores(effectiveAnswers) : null),
-    [effectiveAnswers],
-  );
+  return (
+    <main className="min-h-screen bg-[#FAF9FE] text-slate-800 antialiased selection:bg-violet-200 selection:text-violet-900 pb-16">
+      {/* Top Accent Line */}
+      <div className="w-full h-1 bg-gradient-to-r from-violet-400 via-purple-500 to-indigo-500" />
 
-  const insights = useMemo(
-    () =>
-      effectiveAnswers && reflection
-        ? buildPersonalInsights(effectiveAnswers, reflection)
-        : { strengths: [], reflections: [], focusArea: null },
-    [effectiveAnswers, reflection],
-  );
-
-  const nextSteps = useMemo(
-    () => (effectiveAnswers ? buildNextSteps(effectiveAnswers) : { steps: [], weeklyPlan: [] }),
-    [effectiveAnswers],
-  );
-
-  // Direct-visit / empty state when opening /results without an assessment submission
-  if (!hasActiveView) {
-    return (
-      <div className="min-h-[82vh] bg-[#FAF9FE] relative overflow-hidden flex items-center justify-center px-4 py-16">
-        <div
-          aria-hidden="true"
-          className="absolute -top-28 -left-24 w-96 h-96 bg-purple-200/40 rounded-full blur-3xl pointer-events-none"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-28 -right-24 w-96 h-96 bg-blue-200/35 rounded-full blur-3xl pointer-events-none"
-        />
-
-        <div className="relative z-10 max-w-2xl w-full bg-white rounded-3xl border border-purple-100 shadow-lg shadow-purple-900/5 p-8 sm:p-12 text-center space-y-6 animate-fadeUp">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100 text-violet-700 flex items-center justify-center shadow-xs">
-            <Compass className="w-7 h-7" />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 space-y-6 sm:space-y-7 animate-fadeIn">
+        {/* =========================================================================
+            HEADER: "Your Results are Ready!"
+           ========================================================================= */}
+        <header className="flex items-center gap-3.5 sm:gap-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs border border-emerald-200/60">
+            <Check className="w-6 h-6 stroke-[3]" />
           </div>
-
-          <div className="space-y-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-violet-700 text-xs font-bold border border-purple-100">
-              MindScope Self-Reflection
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              No Check-In Submitted Yet
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-lg mx-auto">
-              Your reflection report is generated dynamically from your own 20-question check-in responses. Take a few quiet minutes to complete the check-in, or preview how the report layout works using sample student responses.
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Your Results are Ready!
+              </h1>
+              {/* Playful violet sparkles rays */}
+              <span className="text-violet-500 inline-block shrink-0">
+                <svg
+                  className="w-5 h-5 sm:w-6 sm:h-6"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#7C3AED"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <line x1="12" y1="2" x2="12" y2="6" />
+                  <line x1="19" y1="7" x2="16" y2="9" />
+                  <line x1="21" y1="14" x2="17" y2="13" />
+                </svg>
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
+              Here&apos;s your mental wellness overview and personalized insights.
             </p>
           </div>
+        </header>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link
-              to="/assessment"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-bold shadow-md shadow-violet-600/20 transition-all"
-            >
-              <span>Start 20-Question Check-In</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+        {/* =========================================================================
+            ROW 1: TWO MAIN STAT CARDS
+            - Card 1: Your Stress Profile (Circular Donut Gauge)
+            - Card 2: Quick Insights (List + Meditating Girl Illustration)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          {/* CARD 1: Your Stress Profile */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-purple-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-5">
+                Your Stress Profile
+              </h2>
+
+              <div className="flex items-center gap-6 sm:gap-7">
+                {/* Donut Chart Gauge */}
+                <DonutGauge
+                  percentage={probabilityPercentage}
+                  predictedClass={predictedClass}
+                  loading={mlStatus === 'loading' || (!mlPrediction && mlStatus !== 'error')}
+                  isError={mlStatus === 'error'}
+                />
+
+                {/* Info Text */}
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-bold border border-violet-100">
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    <span>ML Prediction</span>
+                  </span>
+
+                  {mlStatus === 'loading' || (!mlPrediction && mlStatus !== 'error') ? (
+                    <div className="pt-2 text-xs text-slate-500 font-medium animate-pulse">
+                      Evaluating 20 features against model...
+                    </div>
+                  ) : mlStatus === 'error' ? (
+                    <div className="pt-1.5 space-y-1">
+                      <div className="text-xs font-semibold text-rose-600">
+                        Unable to connect to backend
+                      </div>
+                      <button
+                        type="button"
+                        onClick={retryPrediction}
+                        className="text-[11px] font-bold text-violet-700 hover:text-violet-900 underline cursor-pointer"
+                      >
+                        Click to retry
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-base sm:text-lg font-bold text-slate-900 pt-1.5 leading-snug">
+                        Predicted Class: {predictedClass}
+                      </div>
+                      <div className="text-xs sm:text-sm font-medium text-slate-600">
+                        ({probabilityPercentage.toFixed(2)}% probability)
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-400 flex items-start gap-1.5 mt-5 pt-3 border-t border-slate-100 leading-normal">
+              <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <span>
+                This prediction is based on your responses and may not be a clinical diagnosis.
+              </span>
+            </div>
+          </div>
+
+          {/* CARD 2: Quick Insights */}
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border border-purple-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-4">
+                Quick Insights
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-center">
+                {/* 3 Bullet Points with circular icon pills */}
+                <div className="space-y-3.5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Heart className="w-3.5 h-3.5 fill-purple-600" />
+                    </div>
+                    <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-normal">
+                      {stressLevelSummary}
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Brain className="w-3.5 h-3.5" />
+                    </div>
+                    <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-normal">
+                      {emotionalAwarenessSummary}
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <Star className="w-3.5 h-3.5 fill-amber-500" />
+                    </div>
+                    <p className="text-xs sm:text-[13px] text-slate-700 leading-relaxed font-normal">
+                      Keep going! Small steps can make a big difference.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Illustration: Meditating girl */}
+                <div className="relative flex items-center justify-center shrink-0 mx-auto sm:mx-0">
+                  <div className="absolute inset-0 bg-violet-100/50 rounded-full filter blur-md transform scale-90" />
+                  <img
+                    src={heroMeditation}
+                    alt="Mindful Meditation"
+                    className="relative w-32 h-32 sm:w-36 sm:h-36 object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            ROW 2: TWO CARDS
+            - Card 3: Your Personal Insights (with Clipboard illustration)
+            - Card 4: Small Steps, Meaningful Changes (with interactive checklist)
+           ========================================================================= */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+          {/* CARD 3: Your Personal Insights */}
+          <div id="personal-insights-card" className="bg-[#FAF8FF] rounded-3xl p-6 sm:p-7 border border-purple-100 shadow-xs flex flex-col justify-between scroll-mt-20">
+            <div>
+              <div className="flex items-center gap-2.5 mb-3.5">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <Lightbulb className="w-4 h-4" />
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                  Your Personal Insights
+                </h3>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
+                  {personalInsightSummary}
+                </p>
+                <ClipboardIllustration />
+              </div>
+            </div>
 
             <button
               type="button"
-              onClick={handleStartSamplePreview}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-white hover:bg-purple-50/70 text-slate-700 text-sm font-semibold border border-purple-200 transition-colors cursor-pointer"
+              onClick={() => {
+                setShowDetailedReport((prev) => {
+                  const nextState = !prev;
+                  if (nextState) {
+                    setTimeout(() => {
+                      document.getElementById('reflection-profile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 50);
+                  }
+                  return nextState;
+                });
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-violet-700 bg-purple-100/90 hover:bg-purple-200 transition cursor-pointer self-start mt-4 shadow-2xs"
             >
-              <Eye className="w-4 h-4 text-violet-600" />
-              <span>Explore With Sample Responses</span>
+              <span>{showDetailedReport ? 'Hide Detailed Report' : 'View Detailed Report'}</span>
+              {showDetailedReport ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
 
-          <p className="text-xs text-slate-500 pt-2">
-            Non-clinical self-reflection tool • Answers stay on your device for scoring
-          </p>
-        </div>
-      </div>
-    );
-  }
+          {/* CARD 4: Small Steps, Meaningful Changes */}
+          <div className="bg-[#F8FCF9] rounded-3xl p-6 sm:p-7 border border-emerald-100 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <Sprout className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                    Small Steps, Meaningful Changes
+                  </h3>
+                </div>
 
-  return (
-    <div className="min-h-screen bg-[#FAF9FE] relative overflow-hidden">
-      {/* Soft Decorative Ambient Aura */}
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/4 w-[28rem] h-[28rem] bg-purple-200/30 rounded-full blur-3xl pointer-events-none"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute top-64 right-0 w-[26rem] h-[26rem] bg-blue-200/25 rounded-full blur-3xl pointer-events-none"
-      />
+                <span className="px-2.5 py-0.5 rounded-full bg-white border border-emerald-200 text-slate-600 text-xs font-semibold">
+                  {completedCount} of {totalActionCount} completed
+                </span>
+              </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-14">
+              <p className="text-xs text-slate-600 mb-3.5 font-normal">
+                Start with these simple, personalised actions:
+              </p>
 
-        {/* Optional Opt-In Sample Preview Banner */}
-        {isPreviewMode && (
-          <div className="rounded-2xl bg-amber-50/90 border border-amber-200 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
-            <div className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm text-amber-900">
-              <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
-              <span>
-                <strong>Viewing Sample Preview:</strong> You are exploring sample demonstration answers because no assessment was submitted in this visit.
-              </span>
+              {/* 3 Interactive Checklist Items */}
+              <div className="space-y-2.5">
+                {actionItems.map((item) => {
+                  const isChecked = Boolean(completedItems[item.id]);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => toggleAction(item.id)}
+                      className="w-full text-left flex items-center gap-2.5 group cursor-pointer transition-transform active:scale-[0.99]"
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+                          isChecked
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200'
+                        }`}
+                      >
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                      <span
+                        className={`text-xs sm:text-[13px] leading-snug transition-colors ${
+                          isChecked
+                            ? 'line-through text-slate-400 font-normal'
+                            : 'text-slate-700 font-normal group-hover:text-slate-900'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+
+            <button
+              type="button"
+              onClick={() => setShowActionPlanModal(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 transition cursor-pointer self-end mt-4 shadow-xs"
+            >
+              <span>View Action Plan</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* =========================================================================
+            SECTION B: 5 INDEPENDENT REFLECTION DOMAINS (Your Reflection Profile)
+           ========================================================================= */}
+        {showDetailedReport && (
+          <div className="space-y-4 animate-fadeIn">
+            <ReflectionProfileSection
+              dimensions={reflectionScores?.dimensions || []}
+              answers={effectiveAnswers}
+              reflection={reflectionScores}
+              onHide={() => {
+                setShowDetailedReport(false);
+                document.getElementById('personal-insights-card')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
+            <div className="flex justify-center pt-1">
               <button
                 type="button"
-                onClick={() => setUseSamplePreview(false)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-900 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
+                onClick={() => {
+                  setShowDetailedReport(false);
+                  document.getElementById('personal-insights-card')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 transition cursor-pointer shadow-2xs"
               >
-                Exit Preview
+                <ChevronUp className="w-3.5 h-3.5" />
+                <span>Hide Detailed Report</span>
               </button>
-              <Link
-                to="/assessment"
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white transition-colors"
-              >
-                Take Real Check-In
-              </Link>
             </div>
           </div>
         )}
 
-        {/* ================================================================ */}
-        {/* SECTION A – Welcome & Introduction                               */}
-        {/* ================================================================ */}
-        <header className="relative overflow-hidden rounded-3xl bg-white border border-purple-100/90 shadow-lg shadow-purple-900/5 p-7 sm:p-10 animate-fadeUp">
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-blue-500"
-          />
+        {/* =========================================================================
+            ROW 3: ACCORDION CARD: "Understanding Your Results"
+           ========================================================================= */}
+        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-purple-100 shadow-xs space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                Understanding Your Results
+              </h3>
+            </div>
 
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-50 text-violet-700 text-xs font-bold border border-purple-100">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Personal Wellbeing Check-In Complete</span>
-              </span>
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-800 transition cursor-pointer"
+            >
+              <span>{allExpanded ? 'Collapse All' : 'View All'}</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 transition-transform ${
+                  allExpanded ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
 
-              {submittedTimestamp && !isPreviewMode && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-                  <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Completed {submittedTimestamp}</span>
+          {/* Accordion 1: How your responses were analyzed */}
+          <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
+            <button
+              type="button"
+              onClick={() => toggleRow('responses')}
+              className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                  <BarChart2 className="w-4 h-4" />
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                  How your responses were analyzed
                 </span>
-              )}
-            </div>
-
-            <div className="space-y-3 max-w-3xl">
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Your MindScope Reflection
-              </h1>
-              <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
-                Take a moment to understand your responses, recognize your strengths, and explore areas where you may want to focus.
-              </p>
-            </div>
-
-            {/* Completion Metadata Summary Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              <div className="rounded-2xl bg-[#FAF9FE] border border-purple-100/80 px-4 py-3.5 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
-                  <ClipboardCheck className="w-4.5 h-4.5" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-500">Check-In Progress</div>
-                  <div className="text-sm font-extrabold text-slate-900">
-                    {answeredCount} of {reflection?.totalQuestions || 20} answered
-                  </div>
-                </div>
               </div>
-
-              <div className="rounded-2xl bg-[#FAF9FE] border border-purple-100/80 px-4 py-3.5 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-100 text-indigo-700 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-4.5 h-4.5" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-500">Generated Source</div>
-                  <div className="text-sm font-extrabold text-slate-900">
-                    {isPreviewMode ? 'Sample Responses' : 'Your Own Responses'}
-                  </div>
-                </div>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${
+                  expandedRows.responses ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {expandedRows.responses && (
+              <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+                <p>
+                  Your 20 assessment check-in responses were linearly scaled into the empirical bounds expected by the trained classification model using MindScope&apos;s proposed continuous encoding formula.
+                </p>
+                {Array.isArray(mlPrediction?.imputed_features) &&
+                  mlPrediction.imputed_features.length > 0 && (
+                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs">
+                      <strong>Privacy Imputation:</strong> You chose not to disclose{' '}
+                      {mlPrediction.imputed_features.length} optional item(s) (
+                      <code>{mlPrediction.imputed_features.join(', ')}</code>
+                      ). The backend safely filled these using deterministic training-split statistics.
+                    </div>
+                  )}
               </div>
+            )}
+          </div>
 
-              <div className="rounded-2xl bg-[#FAF9FE] border border-purple-100/80 px-4 py-3.5 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4.5 h-4.5" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-slate-500">Approach</div>
-                  <div className="text-sm font-extrabold text-slate-900">
-                    Non-Clinical Reflection
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Section Jump Strip */}
-            <nav
-              aria-label="Results sections"
-              className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100"
+          {/* Accordion 2: About the model & predictions */}
+          <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
+            <button
+              type="button"
+              onClick={() => toggleRow('model')}
+              className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
             >
-              <span className="text-xs font-semibold text-slate-400 mr-1">Jump to:</span>
-              {SECTION_ANCHORS.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-violet-50 hover:text-violet-700 border border-slate-100 hover:border-purple-200 transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
-          </div>
-        </header>
-
-        {/* ================================================================ */}
-        {/* SECTION B – Your Reflection Profile                              */}
-        {/* ================================================================ */}
-        <ReflectionProfileSection
-          dimensions={reflection?.dimensions || []}
-          answers={effectiveAnswers || {}}
-        />
-
-        {/* ================================================================ */}
-        {/* SECTION C – Personal Insights                                    */}
-        {/* ================================================================ */}
-        <PersonalInsightsSection insights={insights} />
-
-        {/* ================================================================ */}
-        {/* SECTION D – Your Next Steps                                      */}
-        {/* ================================================================ */}
-        <NextStepsSection nextSteps={nextSteps} />
-
-        {/* ================================================================ */}
-        {/* SECTION E – Machine Learning Analysis (Strictly Separated)       */}
-        {/* ================================================================ */}
-        <MachineLearningSection
-          status={isMlIneligible ? 'ineligible' : mlStatus}
-          prediction={isMlIneligible ? null : mlPrediction}
-          modelName={mlModelName}
-          errorMessage={isMlIneligible ? '' : mlError}
-          mlInputs={effectiveMlInputs}
-          eligibilityReason={liveEligibility?.reason || ''}
-          hasProvisionalBloodPressureNotSure={Boolean(
-            !useBenchmarkFallback && liveEligibility?.hasProvisionalBloodPressureNotSure,
-          )}
-          usingBenchmarkFallback={useBenchmarkFallback}
-          onRetry={handleRetryMlPrediction}
-          onUseBenchmarkFallback={isMlIneligible ? handleUseBenchmarkFallback : null}
-        />
-
-        {/* ================================================================ */}
-        {/* SECTION F – Understanding Your Responses                         */}
-        {/* ================================================================ */}
-        <ResponseReviewSection answers={effectiveAnswers || {}} />
-
-        {/* ================================================================ */}
-        {/* SECTION G – Support Is Always Available                          */}
-        {/* ================================================================ */}
-        <section
-          id="support-resources"
-          aria-labelledby="support-resources-heading"
-          className="scroll-mt-24 animate-fadeUp"
-        >
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-50 via-white to-blue-50/70 border border-purple-100/90 shadow-sm p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-2 max-w-2xl">
-                <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-violet-700">
-                  <HeartHandshake className="w-4 h-4" />
-                  <span>Care &amp; Community</span>
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                  <Shield className="w-4 h-4" />
                 </div>
-                <h2
-                  id="support-resources-heading"
-                  className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight"
-                >
-                  Support Is Always Available
-                </h2>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  You do not need to wait for a particular check-in score or a difficult week to reach out. Talking things through early is one of the steadier ways students stay grounded during the term.
+                <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                  About the model &amp; predictions
+                </span>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${
+                  expandedRows.model ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {expandedRows.model && (
+              <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+                <p>
+                  Predictions are generated by a tuned <strong>Gradient Boosting Classifier</strong> trained on 1,100 student lifestyle and stress observations. Outputs are discrete target classes (<code>0</code>, <code>1</code>, <code>2</code>) accompanied by calibrated probability distributions.
                 </p>
-              </div>
-
-              <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 border border-purple-100 text-xs font-semibold text-violet-800 shrink-0 self-start md:self-center">
-                <ShieldCheck className="w-4 h-4 text-violet-600" />
-                <span>Independent of any reflection score</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-2xl bg-white/90 border border-purple-100/80 p-5 space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center">
-                  <Building2 className="w-4.5 h-4.5" />
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {Object.entries(mlPrediction?.probabilities || {}).map(
+                    ([cls, prob]) => (
+                      <span
+                        key={cls}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-mono font-medium text-slate-700"
+                      >
+                        Class {cls}: {(prob * 100).toFixed(1)}%
+                      </span>
+                    ),
+                  )}
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Campus Wellness &amp; Advisors
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Your university&apos;s student counseling office, health center, or academic advising desk (listed in your campus portal) offers confidential spaces to discuss workload or personal balance.
-                </p>
               </div>
-
-              <div className="rounded-2xl bg-white/90 border border-purple-100/80 p-5 space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-indigo-700 flex items-center justify-center">
-                  <MessageSquareHeart className="w-4.5 h-4.5" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Trusted Peers, Family &amp; Mentors
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Sharing how your week is going with a friend, roommate, family member, or supportive faculty mentor can make heavy stretches feel less solitary.
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-white/90 border border-purple-100/80 p-5 space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
-                  <PhoneCall className="w-4.5 h-4.5" />
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Regional &amp; Local Helplines
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  If you ever need immediate emotional support or someone trained to listen right away, please reach out to a local student helpline or your country&apos;s official health and support directory.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================================================================ */}
-        {/* SECTION H – Final Actions                                        */}
-        {/* ================================================================ */}
-        <footer className="rounded-3xl bg-white border border-purple-100/90 shadow-sm p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-5 animate-fadeUp">
-          <div className="space-y-1 text-center sm:text-left">
-            <h2 className="text-lg font-extrabold text-slate-900">
-              Ready for your next check-in anytime
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-xl">
-              MindScope is designed for student self-reflection and educational ML demonstration. It is not a clinical diagnosis or medical assessment.
-            </p>
+            )}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">
-            <Link
-              to="/assessment"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-bold shadow-md shadow-violet-600/20 transition-all"
+          {/* Accordion 3: Important note */}
+          <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
+            <button
+              type="button"
+              onClick={() => toggleRow('notes')}
+              className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>Retake Assessment</span>
-            </Link>
-
-            <Link
-              to="/"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-violet-700 text-sm font-semibold border border-slate-200 hover:border-purple-200 transition-colors"
-            >
-              <HomeIcon className="w-4 h-4" />
-              <span>Return to Home</span>
-            </Link>
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                  <Info className="w-4 h-4" />
+                </div>
+                <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                  Important note
+                </span>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${
+                  expandedRows.notes ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {expandedRows.notes && (
+              <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+                <p>
+                  MindScope provides educational pattern recognition to foster mindful self-awareness. It is not an instrument for psychological diagnosis. If stress or anxiety interferes with your daily activities, please consult campus counseling services or a healthcare professional.
+                </p>
+              </div>
+            )}
           </div>
-        </footer>
+        </div>
+
+        {/* =========================================================================
+            ROW 4: BOTTOM DISCLAIMER BANNER
+           ========================================================================= */}
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-purple-100/60 border border-purple-200/70 flex items-center justify-between text-xs text-purple-950">
+          <div className="flex items-center gap-2.5">
+            <Info className="w-4 h-4 text-purple-700 shrink-0" />
+            <span>
+              MindScope is for educational and awareness purposes only. It is not a substitute for professional medical advice.
+            </span>
+          </div>
+          <Heart className="w-4 h-4 text-purple-400 shrink-0 hidden sm:block" />
+        </div>
+
+        {/* Retake Assessment Action */}
+        <div className="text-center pt-2">
+          <Link
+            to="/assessment"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-violet-700 bg-white hover:bg-violet-50 border border-violet-200 transition-all cursor-pointer shadow-xs"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Retake Assessment</span>
+          </Link>
+        </div>
       </div>
-    </div>
+
+      {/* =========================================================================
+          MODAL 1: VIEW DETAILED REPORT (5 Dimensions Reflection Profile)
+         ========================================================================= */}
+      {showDetailedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-5 h-5 text-violet-600" />
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                  Detailed Reflection Report
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetailedModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* 5-Dimension Reflection Breakdown */}
+            <ReflectionProfileSection
+              dimensions={reflectionScores?.dimensions || []}
+              answers={effectiveAnswers}
+              reflection={reflectionScores}
+            />
+
+            {/* Personal Insights Narrative Breakdown */}
+            <div className="pt-4 border-t border-slate-100">
+              <PersonalInsightsSection insights={insights} />
+            </div>
+
+            {/* Full 20-Question Response Review */}
+            <div className="pt-4 border-t border-slate-100">
+              <ResponseReviewSection answers={effectiveAnswers} />
+            </div>
+
+            <div className="text-right pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDetailedModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold cursor-pointer"
+              >
+                Close Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 2: VIEW ACTION PLAN (Interactive 7-Day Gentle Rhythm)
+         ========================================================================= */}
+      {showActionPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <Sprout className="w-5 h-5 text-emerald-600" />
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                  Your 7-Day Gentle Rhythm Action Plan
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowActionPlanModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <NextStepsSection nextSteps={nextSteps} />
+
+            <div className="text-right pt-2">
+              <button
+                type="button"
+                onClick={() => setShowActionPlanModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
   );
 }
