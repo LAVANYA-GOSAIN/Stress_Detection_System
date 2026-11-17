@@ -1,23 +1,16 @@
 /**
  * API Service for MindScope Frontend
- * Communicates with the FastAPI backend endpoints with resilient direct + proxy fallback.
+ * Communicates with the FastAPI backend endpoints via configurable environment variable or local proxy fallback.
  */
 
-const DIRECT_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 async function fetchFromBackend(path, options = {}) {
-  // 1. Try direct call to FastAPI backend on port 8000 (CORS enabled)
-  try {
-    const directResponse = await fetch(`${DIRECT_URL}${path}`, options);
-    if (directResponse.ok) {
-      return directResponse;
-    }
-  } catch {
-    // Direct call failed or blocked; fall through to proxy
-  }
+  const url = API_BASE_URL
+    ? `${API_BASE_URL}${path}`
+    : `/api${path}`;
 
-  // 2. Fall back to relative /api proxy
-  return fetch(`/api${path}`, options);
+  return fetch(url, options);
 }
 
 /**

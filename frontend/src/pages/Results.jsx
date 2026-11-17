@@ -18,6 +18,7 @@ import {
   X,
   Sparkles,
   RotateCcw,
+  HelpCircle,
 } from 'lucide-react';
 
 import heroMeditation from '../assets/hero-meditation.png';
@@ -32,11 +33,43 @@ import {
   buildNextSteps,
 } from '../utils/reflectionInsights';
 import { fetchModelInfo, submitStressPrediction } from '../services/api';
+import { saveGuestAssessment } from '../services/guestStorage';
 
 import ReflectionProfileSection from '../components/results/ReflectionProfileSection';
 import PersonalInsightsSection from '../components/results/PersonalInsightsSection';
 import NextStepsSection from '../components/results/NextStepsSection';
 import ResponseReviewSection from '../components/results/ResponseReviewSection';
+
+/**
+ * Verified mapping for the 3 ML model target classes (0, 1, 2)
+ * Descriptions are kept general, educational, and non-diagnostic.
+ */
+export const STRESS_CLASS_METADATA = {
+  0: {
+    label: 'Low Stress',
+    description:
+      'Reflects steady daily routines, manageable demands, and healthy recovery margins across academic and personal life.',
+    badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dotColor: 'bg-emerald-500',
+    barColor: 'bg-emerald-500',
+  },
+  1: {
+    label: 'Moderate Stress',
+    description:
+      'Reflects common everyday pressures and workload fluctuations that can typically be balanced with mindful pacing and supportive habits.',
+    badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
+    barColor: 'bg-amber-500',
+  },
+  2: {
+    label: 'High Stress',
+    description:
+      'Reflects higher cumulative strain across multiple lifestyle factors, suggesting an intentional pause and proactive self-care or support.',
+    badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
+    dotColor: 'bg-rose-500',
+    barColor: 'bg-rose-500',
+  },
+};
 
 /**
  * Circular Donut Gauge displaying predicted class probability
@@ -72,7 +105,7 @@ function DonutGauge({ percentage = 0, predictedClass = 1, loading = false, isErr
           className={loading ? "animate-spin origin-center" : "transition-all duration-1000 ease-out"}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-1">
         {loading ? (
           <span className="text-xs font-bold text-violet-600 animate-pulse">
             Calculating...
@@ -84,10 +117,10 @@ function DonutGauge({ percentage = 0, predictedClass = 1, loading = false, isErr
         ) : (
           <>
             <span className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">
-              {percentage.toFixed(2)}%
+              {percentage.toFixed(1)}%
             </span>
-            <span className="text-xs font-bold text-slate-600 mt-1">
-              Class {predictedClass}
+            <span className="text-xs font-bold text-slate-700 mt-1 line-clamp-1">
+              {STRESS_CLASS_METADATA[predictedClass]?.label || `Class ${predictedClass}`}
             </span>
           </>
         )}
@@ -261,6 +294,28 @@ export default function Results() {
     };
   }, [effectiveMlInputs, retryNonce]);
 
+  // Auto-save completed assessment to guest storage once (strictly idempotent)
+  useEffect(() => {
+    if (!hasSubmittedSession || !mlPrediction || mlStatus !== 'success') {
+      return;
+    }
+
+    const assessmentId =
+      routeState?.assessmentId ||
+      `asmt_${routeState?.completedAt ? new Date(routeState.completedAt).getTime() : 'session'}`;
+
+    saveGuestAssessment({
+      id: assessmentId,
+      completedAt: routeState?.completedAt || new Date().toISOString(),
+      predictedClass: mlPrediction.predicted_class,
+      probabilities: mlPrediction.probabilities,
+      modelName: mlPrediction.model_name || 'Gradient Boosting',
+      imputedFeatures: mlPrediction.imputed_features || [],
+      dimensionScores: reflectionScores?.dimensions || [],
+      answers: effectiveAnswers,
+    });
+  }, [hasSubmittedSession, mlPrediction, mlStatus, routeState, reflectionScores, effectiveAnswers]);
+
   // Scroll smoothly to top on arrival
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -276,6 +331,34 @@ export default function Results() {
       0;
     return rawProb * 100;
   }, [mlPrediction, predictedClass]);
+
+  // Dynamic 3-class probability breakdown using verified model mapping
+  const classProbabilities = useMemo(() => {
+    return [0, 1, 2].map((cls) => {
+      const rawProb =
+        mlPrediction?.probabilities?.[cls] ??
+        mlPrediction?.probabilities?.[String(cls)] ??
+        0;
+      const pct = rawProb * 100;
+      return {
+        cls,
+        probability: rawProb,
+        percentage: pct,
+        metadata: STRESS_CLASS_METADATA[cls] || {
+          label: `Class ${cls}`,
+          description: 'Lifestyle pattern classification.',
+          badgeBg: 'bg-slate-50 text-slate-700 border-slate-200',
+          dotColor: 'bg-slate-400',
+          barColor: 'bg-slate-400',
+        },
+        isPredicted: Number(predictedClass) === cls,
+      };
+    });
+  }, [mlPrediction, predictedClass]);
+
+  const totalProbabilityPercentage = useMemo(() => {
+    return classProbabilities.reduce((acc, curr) => acc + curr.percentage, 0);
+  }, [classProbabilities]);
 
   // Dynamic summary texts derived from live prediction & reflection data
   const stressLevelSummary = useMemo(() => {
@@ -379,39 +462,50 @@ export default function Results() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 space-y-6 sm:space-y-7 animate-fadeIn">
         {/* =========================================================================
-            HEADER: "Your Results are Ready!"
+            HEADER: "Your Results are Ready!" + Guest Dashboard Link
            ========================================================================= */}
-        <header className="flex items-center gap-3.5 sm:gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs border border-emerald-200/60">
-            <Check className="w-6 h-6 stroke-[3]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Your Results are Ready!
-              </h1>
-              {/* Playful violet sparkles rays */}
-              <span className="text-violet-500 inline-block shrink-0">
-                <svg
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#7C3AED"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                >
-                  <line x1="12" y1="2" x2="12" y2="6" />
-                  <line x1="19" y1="7" x2="16" y2="9" />
-                  <line x1="21" y1="14" x2="17" y2="13" />
-                </svg>
-              </span>
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 sm:gap-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs border border-emerald-200/60">
+              <Check className="w-6 h-6 stroke-[3]" />
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
-              Here&apos;s your mental wellness overview and personalized insights.
-            </p>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                  Your Results are Ready!
+                </h1>
+                {/* Playful violet sparkles rays */}
+                <span className="text-violet-500 inline-block shrink-0">
+                  <svg
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7C3AED"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
+                    <line x1="12" y1="2" x2="12" y2="6" />
+                    <line x1="19" y1="7" x2="16" y2="9" />
+                    <line x1="21" y1="14" x2="17" y2="13" />
+                  </svg>
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
+                Here&apos;s your mental wellness overview and personalized insights.
+              </p>
+            </div>
           </div>
+
+          <Link
+            to="/dashboard"
+            className="self-start sm:self-center inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 transition-colors shadow-xs"
+          >
+            <Sparkles className="w-4 h-4 text-violet-600" />
+            <span>View in Guest Dashboard</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </header>
 
         {/* =========================================================================
@@ -463,10 +557,10 @@ export default function Results() {
                   ) : (
                     <>
                       <div className="text-base sm:text-lg font-bold text-slate-900 pt-1.5 leading-snug">
-                        Predicted Class: {predictedClass}
+                        Class {predictedClass}: {STRESS_CLASS_METADATA[predictedClass]?.label || 'Stress Level'}
                       </div>
                       <div className="text-xs sm:text-sm font-medium text-slate-600">
-                        ({probabilityPercentage.toFixed(2)}% probability)
+                        {probabilityPercentage.toFixed(1)}% estimated probability assigned by the model
                       </div>
                     </>
                   )}
@@ -477,7 +571,7 @@ export default function Results() {
             <div className="text-[11px] text-slate-400 flex items-start gap-1.5 mt-5 pt-3 border-t border-slate-100 leading-normal">
               <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
               <span>
-                This prediction is based on your responses and may not be a clinical diagnosis.
+                This estimate is generated by an AI model for wellness awareness and is not a medical diagnosis.
               </span>
             </div>
           </div>
@@ -683,26 +777,34 @@ export default function Results() {
         )}
 
         {/* =========================================================================
-            ROW 3: ACCORDION CARD: "Understanding Your Results"
+            ROW 3: "Understanding Your Results"
+            - 3-Class Probability Breakdown (Dynamic from actual API response)
+            - What Probability Percentages Mean & The 65% Low Stress Example
+            - Expandable Technical & Guidance Accordions
            ========================================================================= */}
-        <div className="bg-white rounded-3xl p-6 sm:p-7 border border-purple-100 shadow-xs space-y-3">
+        <section aria-labelledby="understanding-results-heading" className="bg-white rounded-3xl p-6 sm:p-7 border border-purple-100 shadow-xs space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between pb-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                <FileText className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5" />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                Understanding Your Results
-              </h3>
+              <div>
+                <h2 id="understanding-results-heading" className="text-base sm:text-lg font-bold text-slate-900">
+                  Understanding Your Results
+                </h2>
+                <p className="text-xs text-slate-500">
+                  How MindScope&apos;s AI model evaluates patterns, maps categories, and calculates probability estimates.
+                </p>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={toggleAll}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-800 transition cursor-pointer"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-800 transition cursor-pointer self-start sm:self-center"
             >
-              <span>{allExpanded ? 'Collapse All' : 'View All'}</span>
+              <span>{allExpanded ? 'Collapse All Details' : 'View All Details'}</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform ${
                   allExpanded ? 'rotate-180' : ''
@@ -711,117 +813,226 @@ export default function Results() {
             </button>
           </div>
 
-          {/* Accordion 1: How your responses were analyzed */}
-          <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
-            <button
-              type="button"
-              onClick={() => toggleRow('responses')}
-              className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                  <BarChart2 className="w-4 h-4" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                  How your responses were analyzed
-                </span>
-              </div>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform ${
-                  expandedRows.responses ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            {expandedRows.responses && (
-              <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
-                <p>
-                  Your 20 assessment check-in responses were linearly scaled into the empirical bounds expected by the trained classification model using MindScope&apos;s proposed continuous encoding formula.
-                </p>
-                {Array.isArray(mlPrediction?.imputed_features) &&
-                  mlPrediction.imputed_features.length > 0 && (
-                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs">
-                      <strong>Privacy Imputation:</strong> You chose not to disclose{' '}
-                      {mlPrediction.imputed_features.length} optional item(s) (
-                      <code>{mlPrediction.imputed_features.join(', ')}</code>
-                      ). The backend safely filled these using deterministic training-split statistics.
+          {/* 1. Dynamic 3-Class Breakdown Cards */}
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Model Category Breakdown
+              </span>
+              <span className="text-[11px] font-medium text-slate-500">
+                Sum of estimated probabilities: <strong className="text-slate-700">{totalProbabilityPercentage.toFixed(1)}%</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+              {classProbabilities.map(({ cls, percentage, metadata, isPredicted }) => (
+                <div
+                  key={cls}
+                  className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between ${
+                    isPredicted
+                      ? 'bg-violet-50/60 border-violet-300 ring-2 ring-violet-400/30 shadow-xs'
+                      : 'bg-slate-50/50 border-slate-200/80 hover:border-slate-300'
+                  }`}
+                >
+                  <div>
+                    {/* Top row: Class tag & Predicted Badge */}
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${metadata.badgeBg}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${metadata.dotColor}`} />
+                        <span>Class {cls}: {metadata.label}</span>
+                      </span>
+
+                      {isPredicted && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-700 bg-violet-100/90 px-2 py-0.5 rounded-md border border-violet-200">
+                          <Check className="w-3 h-3 stroke-[2.5]" />
+                          <span>Predicted</span>
+                        </span>
+                      )}
                     </div>
-                  )}
-              </div>
-            )}
+
+                    {/* Probability Number */}
+                    <div className="mt-2 mb-2">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-2xl font-black text-slate-900 tracking-tight">
+                          {percentage.toFixed(1)}%
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500">
+                          assigned
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-medium text-slate-600">
+                        estimated probability assigned by the model
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden my-3">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${
+                          isPredicted ? 'bg-violet-600' : 'bg-slate-400'
+                        }`}
+                        style={{ width: `${Math.min(Math.max(percentage, 0), 100)}%` }}
+                      />
+                    </div>
+
+                    {/* General, Educational Description */}
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {metadata.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Accordion 2: About the model & predictions */}
-          <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
-            <button
-              type="button"
-              onClick={() => toggleRow('model')}
-              className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                  <Shield className="w-4 h-4" />
-                </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                  About the model &amp; predictions
-                </span>
-              </div>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform ${
-                  expandedRows.model ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            {expandedRows.model && (
-              <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+          {/* 2. Educational Explainer: What Probability Percentages Mean & Example */}
+          <div className="rounded-2xl bg-gradient-to-br from-violet-50/80 via-purple-50/50 to-indigo-50/40 border border-violet-100/90 p-4 sm:p-5 space-y-3.5">
+            <div className="flex items-center gap-2 text-violet-900 font-bold text-sm">
+              <Lightbulb className="w-4 h-4 text-violet-600 shrink-0" />
+              <span>What These Probability Percentages Mean</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-[13px] text-slate-700 leading-relaxed">
+              <div className="space-y-2">
                 <p>
-                  Predictions are generated by a tuned <strong>Gradient Boosting Classifier</strong> trained on 1,100 student lifestyle and stress observations. Outputs are discrete target classes (<code>0</code>, <code>1</code>, <code>2</code>) accompanied by calibrated probability distributions.
+                  <strong>How the model assigns categories:</strong> Each percentage reflects the <em>estimated probability assigned by the model</em> to that category based on patterns across your 20 check-in responses. The category with the highest probability becomes your predicted class. Together, the three values normally sum to approximately 100%.
                 </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {Object.entries(mlPrediction?.probabilities || {}).map(
-                    ([cls, prob]) => (
+                <p>
+                  <strong>AI model estimates, not medical diagnoses:</strong> MindScope provides AI-assisted wellness estimates for self-reflection and personal awareness. These figures are statistical pattern recognitions, not clinically validated measurements, lab tests, or medical diagnoses.
+                </p>
+              </div>
+
+              <div className="bg-white/90 rounded-xl p-3.5 border border-purple-100/80 shadow-2xs space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-violet-800">
+                  <HelpCircle className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                  <span>Important Clarification &amp; Example</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  A model probability of <strong>65% for Low Stress</strong> does <strong>NOT</strong> mean you are experiencing &quot;65% stress intensity&quot;.
+                </p>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Instead, it means that among the three possible categories, the model calculated a <strong>65% estimated probability</strong> that your overall response pattern aligns with the <strong>Low Stress</strong> category (Class 0), with the remaining 35% distributed across Moderate and High Stress.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Expandable Technical Details & Notes */}
+          <div className="space-y-2.5 pt-1">
+            {/* Accordion 1: How your responses were analyzed */}
+            <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
+              <button
+                type="button"
+                onClick={() => toggleRow('responses')}
+                className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                    <BarChart2 className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                    How your responses were analyzed
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 transition-transform ${
+                    expandedRows.responses ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {expandedRows.responses && (
+                <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+                  <p>
+                    Your 20 assessment check-in responses were linearly scaled into the empirical bounds expected by the trained classification model using MindScope&apos;s continuous encoding formula.
+                  </p>
+                  {Array.isArray(mlPrediction?.imputed_features) &&
+                    mlPrediction.imputed_features.length > 0 && (
+                      <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs">
+                        <strong>Privacy Imputation:</strong> You chose not to disclose{' '}
+                        {mlPrediction.imputed_features.length} optional item(s) (
+                        <code>{mlPrediction.imputed_features.join(', ')}</code>
+                        ). The backend safely filled these using deterministic training-split statistics.
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
+
+            {/* Accordion 2: About the model & predictions */}
+            <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
+              <button
+                type="button"
+                onClick={() => toggleRow('model')}
+                className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                    About the model &amp; predictions
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 transition-transform ${
+                    expandedRows.model ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {expandedRows.model && (
+                <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+                  <p>
+                    Predictions are generated by a tuned <strong>Gradient Boosting Classifier</strong> trained on 1,100 student lifestyle and stress observations. Outputs are discrete target classes (<code>0</code>: Low Stress, <code>1</code>: Moderate Stress, <code>2</code>: High Stress) accompanied by model-estimated class probabilities.
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {classProbabilities.map(({ cls, percentage, metadata, isPredicted }) => (
                       <span
                         key={cls}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-mono font-medium text-slate-700"
+                        className={`px-2.5 py-1 rounded-lg border text-[11px] font-mono font-medium ${
+                          isPredicted
+                            ? 'bg-violet-100 border-violet-300 text-violet-900 font-bold'
+                            : 'bg-white border-slate-200 text-slate-700'
+                        }`}
                       >
-                        Class {cls}: {(prob * 100).toFixed(1)}%
+                        Class {cls} ({metadata.label}): {percentage.toFixed(1)}%
                       </span>
-                    ),
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Accordion 3: Important note */}
-          <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
-            <button
-              type="button"
-              onClick={() => toggleRow('notes')}
-              className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                  <Info className="w-4 h-4" />
+            {/* Accordion 3: Important note & wellness guidance */}
+            <div className="rounded-2xl border border-slate-100 overflow-hidden transition-all">
+              <button
+                type="button"
+                onClick={() => toggleRow('notes')}
+                className="w-full p-4 flex items-center justify-between bg-white hover:bg-slate-50/70 transition cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                    Important note &amp; wellness guidance
+                  </span>
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                  Important note
-                </span>
-              </div>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform ${
-                  expandedRows.notes ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            {expandedRows.notes && (
-              <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
-                <p>
-                  MindScope provides educational pattern recognition to foster mindful self-awareness. It is not an instrument for psychological diagnosis. If stress or anxiety interferes with your daily activities, please consult campus counseling services or a healthcare professional.
-                </p>
-              </div>
-            )}
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 transition-transform ${
+                    expandedRows.notes ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              {expandedRows.notes && (
+                <div className="px-4 pb-4 pt-1 bg-slate-50/50 text-xs sm:text-[13px] text-slate-600 space-y-2 border-t border-slate-100 leading-relaxed">
+                  <p>
+                    MindScope provides educational pattern recognition to foster mindful self-awareness. It is not an instrument for psychological diagnosis or medical evaluation. If stress, anxiety, or academic demands interfere with your daily life or health, please consider reaching out to your campus counseling services, student support center, or a licensed healthcare professional.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* =========================================================================
             ROW 4: BOTTOM DISCLAIMER BANNER
