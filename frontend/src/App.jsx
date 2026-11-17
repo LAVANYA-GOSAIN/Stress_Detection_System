@@ -9,6 +9,8 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Assessment from './pages/Assessment';
 import Results from './pages/Results';
+import Dashboard from './pages/Dashboard';
+import StressRelief from './pages/StressRelief';
 
 /**
  * ScrollToTop helper component
@@ -41,6 +43,8 @@ export default function App() {
         <div className="flex-1 flex flex-col">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/relief" element={<StressRelief />} />
             <Route path="/assessment" element={<Assessment />} />
             <Route path="/results" element={<Results />} />
             {/* Fallback route */}

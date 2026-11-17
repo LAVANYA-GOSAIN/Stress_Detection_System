@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,6 +9,8 @@ import {
   FileText,
   RotateCcw
 } from 'lucide-react';
+import { getGuestSession, isGuestSessionActive } from '../services/guestStorage';
+import GuestEntryModal from '../components/GuestEntryModal';
 
 // Questionnaire & Feature Data
 import {
@@ -20,8 +22,8 @@ import {
 // Assessment UI Components
 import QuestionCard from '../components/assessment/QuestionCard';
 import ChapterTransition from '../components/assessment/ChapterTransition';
-import AssessmentReview from '../components/assessment/AssessmentReview';
 import ResetConfirmModal from '../components/assessment/ResetConfirmModal';
+import { buildLivePredictionRequest } from '../utils/featureMapping';
 
 /**
  * Assessment Page Component (MindScope Student Well-being Check-In)
@@ -33,10 +35,31 @@ import ResetConfirmModal from '../components/assessment/ResetConfirmModal';
  * 2. Automatic advance on single-choice selection.
  * 3. Slim overall progress bar at the top with Question X of 20 and current section name beneath.
  * 4. Persisted answer state when navigating backwards.
- * 5. Full review screen with individual section editing.
+ * 5. Direct seamless transition to Results upon completing Section 5.
  */
 export default function Assessment() {
-  // viewMode: 'intro' | 'questionnaire' | 'section_complete' | 'review'
+  const navigate = useNavigate();
+  const [session, setSession] = useState(getGuestSession());
+  const [showAuthModal, setShowAuthModal] = useState(!session);
+
+  useEffect(() => {
+    const handleSessionUpdate = () => {
+      const active = getGuestSession();
+      setSession(active);
+      if (!active) {
+        setShowAuthModal(true);
+      } else {
+        setShowAuthModal(false);
+      }
+    };
+
+    window.addEventListener('mindscope_session_change', handleSessionUpdate);
+    return () => {
+      window.removeEventListener('mindscope_session_change', handleSessionUpdate);
+    };
+  }, []);
+
+  // viewMode: 'intro' | 'questionnaire' | 'section_complete'
   const [viewMode, setViewMode] = useState('intro');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [completedSectionIndex, setCompletedSectionIndex] = useState(0);
@@ -182,6 +205,25 @@ export default function Assessment() {
     setShowResetModal(false);
   };
 
+  // Submit assessment answers and transition directly to the Results page
+  const handleProceedToResults = () => {
+    // Generate a unique assessment identifier to ensure idempotent saving
+    const assessmentId = `asmt_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const completionTimestamp = new Date().toISOString();
+
+    // Map student answers via the hardened 20-feature converter alongside independent reflection answers
+    const livePredictionRequest = buildLivePredictionRequest(answers);
+    navigate('/results', {
+      state: {
+        assessmentId,
+        inputs: livePredictionRequest.canSubmit ? livePredictionRequest.payload : null,
+        mlEligibility: livePredictionRequest,
+        rawAssessmentAnswers: answers,
+        completedAt: completionTimestamp,
+      },
+    });
+  };
+
   // Interstitial: Proceed after section celebration
   const handleProceedFromSectionComplete = () => {
     if (completedSectionIndex < SECTIONS.length - 1) {
@@ -192,7 +234,7 @@ export default function Assessment() {
       setCurrentQuestionIndex(nextQIndex >= 0 ? nextQIndex : currentQuestionIndex + 1);
       setViewMode('questionnaire');
     } else {
-      setViewMode('review');
+      handleProceedToResults();
     }
   };
 
@@ -201,17 +243,6 @@ export default function Assessment() {
     const firstQId = currentSection.questionIds[0];
     const targetIdx = QUESTIONS_LIST.findIndex((q) => q.id === firstQId);
     setAnimationDirection('prev');
-    setCurrentQuestionIndex(targetIdx >= 0 ? targetIdx : 0);
-    setViewMode('questionnaire');
-  };
-
-  // Jump to specific section (from Review screen)
-  const handleJumpToSection = (sectionIdx) => {
-    const targetSection = SECTIONS[sectionIdx];
-    if (!targetSection) return;
-    const firstQId = targetSection.questionIds[0];
-    const targetIdx = QUESTIONS_LIST.findIndex((q) => q.id === firstQId);
-    setAnimationDirection(targetIdx >= currentQuestionIndex ? 'next' : 'prev');
     setCurrentQuestionIndex(targetIdx >= 0 ? targetIdx : 0);
     setViewMode('questionnaire');
   };
@@ -408,21 +439,25 @@ export default function Assessment() {
           />
         )}
 
-        {/* ----------------------------------------------------------- */}
-        {/* VIEW 4: FINAL ASSESSMENT REVIEW SCREEN                      */}
-        {/* ----------------------------------------------------------- */}
-        {viewMode === 'review' && (
-          <AssessmentReview
-            answers={answers}
-            onEditChapter={handleJumpToSection}
-          />
-        )}
-
         {/* Confirmation Modal for Reset */}
         <ResetConfirmModal
           isOpen={showResetModal}
           onCancel={() => setShowResetModal(false)}
           onConfirm={handleConfirmReset}
+        />
+
+        {/* Guest Session Gate Modal */}
+        <GuestEntryModal
+          isOpen={showAuthModal && !session}
+          onClose={() => {
+            if (!isGuestSessionActive()) {
+              navigate('/');
+            } else {
+              setShowAuthModal(false);
+            }
+          }}
+          initialStep="choice"
+          targetDestination="/assessment"
         />
 
       </div>
