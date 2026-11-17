@@ -148,7 +148,7 @@ export default function QuestionCard({
         >
           <span>
             {isLastOverall
-              ? 'Review Assessment'
+              ? 'Complete Assessment ✨'
               : isLastInSection
               ? `Complete Section ${sectionNumber} ✨`
               : 'Continue'}
